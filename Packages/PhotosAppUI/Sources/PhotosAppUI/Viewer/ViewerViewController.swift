@@ -60,9 +60,6 @@ final class ViewerViewController: UIViewController {
     private var spatialOn = false
     private var spatialTask: Task<Void, Never>?
     private var spatialItemID: String?
-    private var spatialAtEdge: NSLayoutConstraint?
-    private var spatialBesideAirPlay: NSLayoutConstraint?
-    private let airPlayButton = AirPlayButton()
     private let airPlayPhotos = AirPlayPhotoPresenter()
     private lazy var filmstrip = FilmstripView(pipeline: session.pipeline, placeholder: placeholder)
     private let banner = UndoBanner()
@@ -160,7 +157,7 @@ final class ViewerViewController: UIViewController {
         view.addSubview(collectionView)
 
         videoControls.alpha = 0
-        for subview in [topBar, filmstrip, videoControls, bottomBar, banner, liveBadge, airPlayButton, spatialBadge] as [UIView] {
+        for subview in [topBar, filmstrip, videoControls, bottomBar, banner, liveBadge, spatialBadge] as [UIView] {
             subview.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview(subview)
         }
@@ -182,19 +179,13 @@ final class ViewerViewController: UIViewController {
             liveBadge.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
             liveBadge.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 12),
             liveBadge.heightAnchor.constraint(equalToConstant: 30),
-            airPlayButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
-            airPlayButton.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 10),
-            airPlayButton.widthAnchor.constraint(equalToConstant: Glass.controlHeight),
-            airPlayButton.heightAnchor.constraint(equalToConstant: Glass.controlHeight),
             banner.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
             banner.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
             banner.bottomAnchor.constraint(equalTo: filmstrip.topAnchor, constant: -12),
         ])
 
-        // Under the ··· button, level with the Live badge; it moves left when the AirPlay button shows.
-        spatialAtEdge = spatialBadge.trailingAnchor.constraint(equalTo: topBar.menuButton.trailingAnchor)
-        spatialBesideAirPlay = spatialBadge.trailingAnchor.constraint(equalTo: airPlayButton.leadingAnchor, constant: -10)
-        spatialAtEdge?.isActive = true
+        // Under the ··· button, level with the Live badge.
+        spatialBadge.trailingAnchor.constraint(equalTo: topBar.menuButton.trailingAnchor).isActive = true
         spatialBadge.centerYAnchor.constraint(equalTo: liveBadge.centerYAnchor).isActive = true
         spatialBadge.alpha = 0
         spatialBadge.addTarget(self, action: #selector(spatialTapped), for: .touchUpInside)
@@ -206,7 +197,6 @@ final class ViewerViewController: UIViewController {
         }
         airPlayPhotos.attach(to: view)
         airPlayPhotos.onRouteChange = { [weak self] _ in self?.sendCurrentToAirPlay() }
-        airPlayButton.onAvailabilityChange = { [weak self] _ in self?.updateChrome() }
         topBar.backButton.addTarget(self, action: #selector(close), for: .touchUpInside)
         bottomBar.shareButton.addTarget(self, action: #selector(share), for: .touchUpInside)
         bottomBar.favoriteButton.addTarget(self, action: #selector(toggleFavorite), for: .touchUpInside)
@@ -344,13 +334,8 @@ final class ViewerViewController: UIViewController {
         topBar.alpha = alpha * (1 - openness)
         let isLive = currentItem?.isLivePhoto == true
         liveBadge.alpha = isLive ? alpha * (1 - openness) : 0
-        airPlayButton.alpha = airPlayButton.isAvailable ? alpha * (1 - openness) : 0
         // The spatial badge stays up while its scene shows, when everything else is hidden.
         spatialBadge.alpha = canShowSpatial ? (spatialOn ? 1 : alpha * (1 - openness)) : 0
-        if airPlayButton.isAvailable != (spatialBesideAirPlay?.isActive ?? false) {
-            spatialAtEdge?.isActive = !airPlayButton.isAvailable
-            spatialBesideAirPlay?.isActive = airPlayButton.isAvailable
-        }
         let isVideo = currentItem?.isVideo == true && currentPage?.video != nil
         let scrubbing = videoControls.isScrubbing
         filmstrip.alpha = scrubbing ? 0 : alpha * (1 - openness)
@@ -360,7 +345,6 @@ final class ViewerViewController: UIViewController {
             topBar.alpha = 0
             bottomBar.alpha = 0
             liveBadge.alpha = 0
-            airPlayButton.alpha = 0
             return
         }
         bottomBar.alpha = alpha
@@ -989,7 +973,9 @@ final class ViewerViewController: UIViewController {
         UINotificationFeedbackGenerator().notificationOccurred(.error)
     }
 
-    /// One-tap AirPlay: the current photo goes to the TV (videos play there from their page).
+    /// The TV follows the viewer. There's no button for it here: the TV is chosen with the
+    /// system's own controls (Screen Mirroring or AirPlay in Control Centre), and the current
+    /// photo then fills it; videos play there from their page.
     private func sendCurrentToAirPlay() {
         // A connected TV (Screen Mirroring / cable) shows the current photo or video full screen.
         if let item = currentItem {

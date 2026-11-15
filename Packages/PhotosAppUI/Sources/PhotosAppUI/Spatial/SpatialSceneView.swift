@@ -95,7 +95,7 @@ final class SpatialSceneView: MTKView, MTKViewDelegate {
         zoom = 1 + (SpatialRenderer.activeZoom - 1) * eased
         var target = manualLook ?? motion.look
         if manualLook == nil { target += SIMD2<Float>(0.55, -0.2) * (1 - eased) * sin(opening * .pi) * 1.6 }
-        look += (target - look) * (1 - exp(-dt * 10))
+        look += (target - look) * (1 - exp(-dt * 12))
 
         let moved = simd_distance(look, drawnLook) > 0.0015 || abs(zoom - drawnZoom) > 0.0002
         guard needsFrame || moved else { return }

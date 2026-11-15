@@ -9,6 +9,8 @@ struct FloatingBar: View {
     /// The selection pill slides between tabs (and stretches as it goes), like iOS 26.
     @Namespace private var pill
     @State private var stretching = false
+    /// The whole capsule swells for a moment when a tab is tapped.
+    @State private var splash = false
     @State private var bounce: [AppSection: Int] = [:]
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -58,6 +60,7 @@ struct FloatingBar: View {
         }
         .padding(4)
         .glassSurface(Capsule())
+        .scaleEffect(x: splash ? 1.065 : 1, y: splash ? 1.045 : 1)
     }
 
     private func tabButton(_ section: AppSection, title: LocalizedStringKey, symbol: String) -> some View {
@@ -96,6 +99,10 @@ struct FloatingBar: View {
             return
         }
         bounce[section, default: 0] += 1
+        withAnimation(.spring(response: 0.16, dampingFraction: 0.7)) { splash = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.42)) { splash = false }
+        }
         guard ui.section != section else { return }
         withAnimation(.spring(duration: 0.16)) { stretching = true }
         withAnimation(.spring(response: 0.38, dampingFraction: 0.72)) { ui.section = section }

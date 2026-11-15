@@ -7,8 +7,8 @@ import simd
 @MainActor
 final class SpatialMotion {
     private static let manager = CMMotionManager()
-    /// About 12° of tilt reaches most of the range.
-    private static let fullTilt = 0.21
+    /// About 8° of tilt reaches most of the range.
+    private static let fullTilt = 0.14
 
     private(set) var look = SIMD2<Float>(0, 0)
     var isAvailable: Bool { Self.manager.isDeviceMotionAvailable }

@@ -3,8 +3,15 @@
 # Depth Anything V2 Small in Core ML form (Apache-2.0), about 48 MB.
 # It is pinned to one revision and checked against known SHA-256 sums.
 # The app builds without it; the Spatial Scene button is then hidden.
-# Usage: Scripts/fetch-depth-model.sh
+# `xcodegen generate` runs this by itself (project.yml, preGenCommand).
+# Usage: Scripts/fetch-depth-model.sh [--optional]
+#   --optional: a failed download is a warning, not an error (for building offline).
 set -eu
+
+if [ "${1:-}" = "--optional" ]; then
+  "$0" || echo "warning: the depth model was not downloaded; Spatial Scene will be hidden in this build" >&2
+  exit 0
+fi
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 NAME=DepthAnythingV2SmallF16.mlpackage

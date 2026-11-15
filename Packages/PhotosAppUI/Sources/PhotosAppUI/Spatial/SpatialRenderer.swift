@@ -29,9 +29,9 @@ final class SpatialRenderer {
     }
 
     /// How far the nearest and farthest points move at full tilt, as a share of the photo's shorter side.
-    static let amplitude: Float = 0.035
+    static let amplitude: Float = 0.05
     /// Zoomed in just enough that the photo's edges never come into view.
-    static let activeZoom: Float = 1.06
+    static let activeZoom: Float = 1.085
     static let pixelFormat = MTLPixelFormat.bgra8Unorm
 
     let device: MTLDevice
