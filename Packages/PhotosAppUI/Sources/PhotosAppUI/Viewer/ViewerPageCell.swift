@@ -129,6 +129,7 @@ final class ViewerPageCell: UICollectionViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
+        stopSpatial(animated: false)
         subjectLift.reset()
         stopVideo()
         stopLive()
@@ -244,6 +245,7 @@ final class ViewerPageCell: UICollectionViewCell {
     /// The viewer calls this when the page scrolls away. A decoded original is ~48 MB
     /// for 12 MP, so the page falls back to the preview until it's zoomed again.
     func didResignCurrent() {
+        stopSpatial(animated: false)
         stopVideo()
         stopLive()
         settleWork?.cancel()
@@ -337,6 +339,95 @@ final class ViewerPageCell: UICollectionViewCell {
 
     @objc private func singleTapped() {
         onSingleTap?()
+    }
+
+    // MARK: Spatial scene
+
+    private var spatialView: SpatialSceneView?
+    private var shimmer: SpatialShimmerView?
+
+    /// The scene on screen, if the spatial view is showing.
+    var spatialSceneView: SpatialSceneView? { spatialView }
+
+    /// Works out the photo's depth (a shimmer plays meanwhile) and shows it as a scene that
+    /// shifts as the iPhone tilts. Throws if the photo can't be used; cancelling leaves it as it was.
+    func startSpatial() async throws {
+        guard let item, !item.isVideo else { throw SpatialError.noImage }
+        guard spatialView == nil else { return }
+        zoomView.resetZoom(animated: true)
+        setSpatialInteraction(true)
+        let shimmer = SpatialShimmerView(frame: zoomView.imageView.bounds)
+        shimmer.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        shimmer.alpha = 0
+        zoomView.imageView.addSubview(shimmer)
+        self.shimmer?.removeFromSuperview()
+        self.shimmer = shimmer
+        UIView.animate(withDuration: 0.2) { shimmer.alpha = 1 }
+        do {
+            // The photo may still be loading: wait for the full preview (not the small placeholder).
+            var waited = 0
+            while quality < .preview, waited < 80 {
+                try await Task.sleep(for: .milliseconds(100))
+                waited += 1
+            }
+            guard let image = zoomView.imageView.image else { throw SpatialError.noImage }
+            let key = "\(item.id)|\(Int(image.size.width * image.scale))"
+            let scene: SpatialScene
+            if let cached = SpatialSceneCache.scene(for: key) {
+                scene = cached
+            } else {
+                scene = try await SpatialSceneFactory.scene(for: image)
+                SpatialSceneCache.store(scene, for: key)
+            }
+            try Task.checkCancellation()
+            guard self.item?.id == item.id, self.shimmer === shimmer else { throw CancellationError() }
+            guard let view = SpatialSceneView(scene: scene) else { throw SpatialError.renderFailed }
+            view.frame = zoomView.imageView.bounds
+            view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            view.alpha = 0
+            zoomView.imageView.insertSubview(view, belowSubview: shimmer)
+            spatialView = view
+            view.whenFirstFrameShown { [weak self, weak view, weak shimmer] in
+                UIView.animate(withDuration: 0.3) {
+                    view?.alpha = 1
+                    shimmer?.alpha = 0
+                } completion: { _ in
+                    shimmer?.removeFromSuperview()
+                    if self?.shimmer === shimmer { self?.shimmer = nil }
+                }
+            }
+        } catch {
+            if self.shimmer === shimmer {
+                self.shimmer = nil
+                if spatialView == nil { setSpatialInteraction(false) }
+            }
+            UIView.animate(withDuration: 0.2) { shimmer.alpha = 0 } completion: { _ in shimmer.removeFromSuperview() }
+            throw error
+        }
+    }
+
+    /// Back to the flat photo.
+    func stopSpatial(animated: Bool) {
+        shimmer?.removeFromSuperview()
+        shimmer = nil
+        guard let view = spatialView else { return }
+        spatialView = nil
+        view.shutDown()
+        setSpatialInteraction(false)
+        guard animated else { return view.removeFromSuperview() }
+        UIView.animate(withDuration: 0.22) { view.alpha = 0 } completion: { _ in view.removeFromSuperview() }
+    }
+
+    /// While the scene shows, zooming, subject lift and Live Photo playback step aside.
+    private func setSpatialInteraction(_ active: Bool) {
+        zoomView.pinchGestureRecognizer?.isEnabled = !active
+        zoomView.doubleTapRecognizer.isEnabled = !active
+        livePress.isEnabled = !active
+        if active {
+            subjectLift.setEnabled(false)
+        } else if let item, !item.isVideo {
+            subjectLift.setEnabled(!(item.isLivePhoto && !LivePhotoSettings.isOff(item.id)))
+        }
     }
 
     @objc private func playTapped() {

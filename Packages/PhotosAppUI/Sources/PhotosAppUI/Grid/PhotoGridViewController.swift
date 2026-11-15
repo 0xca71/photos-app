@@ -185,6 +185,7 @@ final class PhotoGridViewController: UIViewController {
     /// shrinks from its tile into the carousel.
     /// `-ShareScreenSelfTest`: opens the share screen on the newest photo and video.
     private var didRunShareSelfTest = false
+    fileprivate static var didRunSpatialSelfTest = false
     private func runShareSelfTestIfNeeded() {
         guard ScreenCapture.isEnabled, !didRunShareSelfTest, !items.isEmpty, view.window != nil else { return }
         didRunShareSelfTest = true
@@ -242,6 +243,7 @@ final class PhotoGridViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         runShareSelfTestIfNeeded()
+        runSpatialSelfTestIfNeeded()
         if !didInitialScroll, !items.isEmpty, collectionView.bounds.height > 0, collectionView.bounds.width > 0 {
             // Items given before the view existed (the cached Library at launch): the grid
             // must lay itself out first, or its height is still 0 and "the bottom" is the top.
@@ -720,6 +722,31 @@ extension PhotoGridViewController: UICollectionViewDataSource, UICollectionViewD
         }
         guard let viewer = makeViewer?(items, indexPath.item, self, placeholderFor) else { return }
         present(viewer, animated: true)
+        if SpatialSelfTest.isEnabled, let viewer = viewer as? ViewerViewController {
+            Task { await SpatialSelfTest.run(viewer: viewer) }
+        }
+    }
+
+    /// `-SpatialSelfTest`: opens the newest photo in the viewer.
+    private func runSpatialSelfTestIfNeeded() {
+        guard SpatialSelfTest.isEnabled, !Self.didRunSpatialSelfTest, !items.isEmpty, view.window != nil else { return }
+        Self.didRunSpatialSelfTest = true
+        ScreenCapture.reset()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+            guard let self else { return }
+            // An older Cloud photo (its full preview is sure to exist), scrolled into view first.
+            let older = self.items.prefix(max(self.items.count - 300, 0))
+            guard self.presentedViewController == nil,
+                  let index = older.lastIndex(where: { !$0.isVideo && !$0.isScreenshot && $0.hasCamera && $0.isRemote && $0.localID == nil })
+                    ?? self.items.lastIndex(where: { !$0.isVideo }) else { return }
+            let path = IndexPath(item: index, section: 0)
+            self.collectionView.scrollToItem(at: path, at: .centeredVertically, animated: false)
+            self.collectionView.layoutIfNeeded()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                SpatialSelfTest.say("opening item \(index + 1) of \(self.items.count)")
+                self.collectionView(self.collectionView, didSelectItemAt: path)
+            }
+        }
     }
 
     func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {

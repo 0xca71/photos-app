@@ -6,7 +6,7 @@
 
 **A native iOS photo library for your own server: it looks, feels and moves like a first-class iOS app, with your pictures on hardware you own.**
 
-![Version](https://img.shields.io/badge/version-0.7.2-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-0.8.0-blue?style=for-the-badge)
 ![Status](https://img.shields.io/badge/status-beta-orange?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/iOS-18%2B%20·%20iOS%2026%20Liquid%20Glass-black?style=for-the-badge)
 ![Swift](https://img.shields.io/badge/Swift-6%20strict%20concurrency-F05138?style=for-the-badge&logo=swift&logoColor=white)
@@ -67,6 +67,7 @@ Photos and personal details are blurred.
 - Live Photos (press and hold), with LIVE / Off.
 - Long-press subject lift, Live Text and Look Up.
 - AirPlay for photos and videos, plus external displays.
+- **Spatial Scene:** a small button under ··· gives any photo depth. Tilt the iPhone and nearer things move against the background. The depth is worked out on the iPhone by a built-in model; nothing is uploaded and the photo isn't changed.
 - Share screen: carousel, options (location, format, all photo data) and extra actions.
 - Favourite, Hide (PIN-protected Locked Folder behind Face ID), Duplicate, Archive, Delete with Undo (from the iPhone and Cloud), Adjust Date & Location, Save to This iPhone.
 
@@ -109,6 +110,7 @@ Photos and personal details are blurred.
 - Signing out removes the account's data from the iPhone, including the Hidden PIN.
 - The developer receives no personal data, so on the app's side there is nothing for privacy laws such as the GDPR to cover. If you host the server for other people, you are responsible for their data on it.
 - The map in a photo's info panel uses iOS's built-in maps service.
+- Spatial Scene's depth model runs on the iPhone; the depth of a photo is kept in memory only and never stored or sent.
 
 ## Architecture
 
@@ -170,7 +172,7 @@ With a free account the app must be re-signed every **7 days**: install the same
    cp Config/Local.xcconfig.template Config/Local.xcconfig   # set DEVELOPMENT_TEAM and your server addresses
    ```
 3. Connect the iPhone and find its UDID: `xcrun devicectl list devices`.
-4. Build and install a Release build:
+4. Build and install a Release build (this also downloads the 48 MB depth model for Spatial Scene, once, and checks it):
    ```sh
    Scripts/reinstall.sh <device-udid>
    ```
@@ -239,6 +241,7 @@ How the app protects your account and photos, how to report a problem, and the a
 ## Credits
 
 - **[Immich](https://github.com/immich-app/immich)**: the self-hosted server this app talks to. Its OpenAPI spec is included in `api/` under Immich's licence (AGPL-3.0). The official app was studied for behaviour only; no Immich code is used.
+- **[Depth Anything V2](https://github.com/DepthAnything/Depth-Anything-V2)** (Small, in [Core ML form](https://huggingface.co/apple/coreml-depth-anything-v2-small)): the depth model behind Spatial Scene, Apache-2.0. See [`docs/THIRD_PARTY_NOTICES.md`](docs/THIRD_PARTY_NOTICES.md).
 - This app is independent, uses its own icon, and is not affiliated with any platform vendor.
 - Built by one developer, with Claude (Anthropic) as a pair programmer.
 

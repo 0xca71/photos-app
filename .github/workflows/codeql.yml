@@ -27,6 +27,7 @@ jobs:
           queries: security-extended
       - name: Build
         run: |
+          Scripts/fetch-depth-model.sh
           xcodegen generate
           xcodebuild -project Photos.xcodeproj -scheme Photos -configuration Debug \
             -destination 'generic/platform=iOS' -derivedDataPath build/DerivedData \

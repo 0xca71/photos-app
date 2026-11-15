@@ -13,6 +13,7 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd)
 APP="$ROOT/build/DerivedData/Build/Products/Release-iphoneos/Photos.app"
 
 cd "$ROOT"
+Scripts/fetch-depth-model.sh
 xcodegen generate --quiet
 xcodebuild -project Photos.xcodeproj -scheme Photos -configuration Release \
   -destination 'generic/platform=iOS' -derivedDataPath build/DerivedData \

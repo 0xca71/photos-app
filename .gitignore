@@ -73,3 +73,6 @@ CLAUDE.md
 PLAN.md
 PROMPT.md
 .DS_Store
+
+# The depth model for Spatial Scene (Scripts/fetch-depth-model.sh downloads it)
+App/Models/

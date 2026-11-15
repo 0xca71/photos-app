@@ -55,6 +55,13 @@ final class ViewerViewController: UIViewController {
         }
     }
     private let liveBadge = LiveBadgeButton()
+    private let spatialBadge = SpatialSceneBadge()
+    /// Spatial scenes are on: each photo paged to is shown with depth until it's turned off.
+    private var spatialOn = false
+    private var spatialTask: Task<Void, Never>?
+    private var spatialItemID: String?
+    private var spatialAtEdge: NSLayoutConstraint?
+    private var spatialBesideAirPlay: NSLayoutConstraint?
     private let airPlayButton = AirPlayButton()
     private let airPlayPhotos = AirPlayPhotoPresenter()
     private lazy var filmstrip = FilmstripView(pipeline: session.pipeline, placeholder: placeholder)
@@ -153,7 +160,7 @@ final class ViewerViewController: UIViewController {
         view.addSubview(collectionView)
 
         videoControls.alpha = 0
-        for subview in [topBar, filmstrip, videoControls, bottomBar, banner, liveBadge, airPlayButton] as [UIView] {
+        for subview in [topBar, filmstrip, videoControls, bottomBar, banner, liveBadge, airPlayButton, spatialBadge] as [UIView] {
             subview.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview(subview)
         }
@@ -184,6 +191,13 @@ final class ViewerViewController: UIViewController {
             banner.bottomAnchor.constraint(equalTo: filmstrip.topAnchor, constant: -12),
         ])
 
+        // Under the ··· button, level with the Live badge; it moves left when the AirPlay button shows.
+        spatialAtEdge = spatialBadge.trailingAnchor.constraint(equalTo: topBar.menuButton.trailingAnchor)
+        spatialBesideAirPlay = spatialBadge.trailingAnchor.constraint(equalTo: airPlayButton.leadingAnchor, constant: -10)
+        spatialAtEdge?.isActive = true
+        spatialBadge.centerYAnchor.constraint(equalTo: liveBadge.centerYAnchor).isActive = true
+        spatialBadge.alpha = 0
+        spatialBadge.addTarget(self, action: #selector(spatialTapped), for: .touchUpInside)
         liveBadge.onChange = { [weak self] off in self?.currentPage?.setLiveOff(off) }
         // While scrubbing a video, everything but the scrubber hides.
         videoControls.onScrubbingChanged = { [weak self] _ in
@@ -331,6 +345,12 @@ final class ViewerViewController: UIViewController {
         let isLive = currentItem?.isLivePhoto == true
         liveBadge.alpha = isLive ? alpha * (1 - openness) : 0
         airPlayButton.alpha = airPlayButton.isAvailable ? alpha * (1 - openness) : 0
+        // The spatial badge stays up while its scene shows, when everything else is hidden.
+        spatialBadge.alpha = canShowSpatial ? (spatialOn ? 1 : alpha * (1 - openness)) : 0
+        if airPlayButton.isAvailable != (spatialBesideAirPlay?.isActive ?? false) {
+            spatialAtEdge?.isActive = !airPlayButton.isAvailable
+            spatialBesideAirPlay?.isActive = airPlayButton.isAvailable
+        }
         let isVideo = currentItem?.isVideo == true && currentPage?.video != nil
         let scrubbing = videoControls.isScrubbing
         filmstrip.alpha = scrubbing ? 0 : alpha * (1 - openness)
@@ -345,6 +365,85 @@ final class ViewerViewController: UIViewController {
         }
         bottomBar.alpha = alpha
     }
+
+    // MARK: Spatial scene
+
+    /// Photos only, and only in builds that carry the depth model.
+    private var canShowSpatial: Bool {
+        guard DepthEstimator.isAvailable, let item = currentItem else { return false }
+        return !item.isVideo
+    }
+
+    @objc private func spatialTapped() {
+        setSpatial(!spatialOn)
+    }
+
+    /// On: the controls step aside (the badge stays) and the current photo gets depth.
+    /// Off: the flat photo and the controls come back.
+    private func setSpatial(_ on: Bool, animated: Bool = true) {
+        guard on != spatialOn else { return }
+        if on {
+            guard canShowSpatial else { return }
+            if isSlideshowRunning { stopSlideshow() }
+            if infoStop != .hidden { setInfoStop(.hidden, animated: false) }
+            spatialOn = true
+            chromeHidden = true
+            UIView.animate(withDuration: 0.22) {
+                self.setChromeAlpha(0)
+                self.setNeedsStatusBarAppearanceUpdate()
+            }
+            setNeedsUpdateOfHomeIndicatorAutoHidden()
+            startSpatialOnCurrentPage()
+        } else {
+            spatialOn = false
+            spatialTask?.cancel()
+            spatialTask = nil
+            spatialItemID = nil
+            for case let page as ViewerPageCell in collectionView.visibleCells { page.stopSpatial(animated: animated) }
+            spatialBadge.set(.off, animated: animated)
+            chromeHidden = false
+            UIView.animate(withDuration: animated ? 0.22 : 0) {
+                self.setChromeAlpha(1)
+                self.backgroundView.backgroundColor = .systemBackground
+                self.setNeedsStatusBarAppearanceUpdate()
+            }
+            setNeedsUpdateOfHomeIndicatorAutoHidden()
+        }
+    }
+
+    /// Makes (or reuses) the scene for the page now in view; a video turns the mode off.
+    private func startSpatialOnCurrentPage() {
+        guard spatialOn else { return }
+        guard canShowSpatial, let page = currentPage, let item = currentItem else { return setSpatial(false) }
+        if page.spatialSceneView != nil {
+            spatialItemID = item.id
+            return spatialBadge.set(.on, animated: true)
+        }
+        if spatialTask != nil, spatialItemID == item.id { return }
+        spatialTask?.cancel()
+        spatialItemID = item.id
+        spatialBadge.set(.generating, animated: true)
+        spatialTask = Task { [weak self] in
+            do {
+                try await page.startSpatial()
+                guard let self, !Task.isCancelled, self.spatialItemID == item.id else { return }
+                self.spatialTask = nil
+                self.spatialBadge.set(.on, animated: true)
+            } catch is CancellationError {
+                return
+            } catch {
+                guard let self, !Task.isCancelled, self.spatialItemID == item.id else { return }
+                Log.ui.error("Spatial scene failed: \(error.localizedDescription, privacy: .public)")
+                self.setSpatial(false)
+                self.showError(error)
+            }
+        }
+    }
+
+    // Hooks for `-SpatialSelfTest`.
+    var spatialTestPage: ViewerPageCell? { currentPage }
+    var spatialTestBadge: SpatialSceneBadge { spatialBadge }
+    func spatialTestTap() { spatialTapped() }
 
     private func toggleChrome() {
         chromeHidden.toggle()
@@ -370,6 +469,7 @@ final class ViewerViewController: UIViewController {
         bottomBar.setInfoShown(infoStop != .hidden)
         topBar.menuButton.menu = moreMenu(for: item)
         liveBadge.set(off: LivePhotoSettings.isOff(item.id))
+        if spatialOn, !canShowSpatial { setSpatial(false) }
         setChromeAlpha(chromeHidden ? 0 : 1)
     }
 
@@ -538,6 +638,7 @@ final class ViewerViewController: UIViewController {
     /// Plays forward from the current photo, cross-fading every 3 seconds, with the controls hidden.
     private func startSlideshow() {
         guard !isSlideshowRunning, currentIndex < items.count - 1 else { return }
+        setSpatial(false, animated: false)
         if infoStop != .hidden { setInfoStop(.hidden, animated: false) }
         if !chromeHidden { toggleChrome() }
         UIApplication.shared.isIdleTimerDisabled = true
@@ -574,6 +675,9 @@ final class ViewerViewController: UIViewController {
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         if isBeingDismissed || presentingViewController == nil {
+            // The depth model and the scenes made here take memory the Library doesn't need.
+            SpatialSceneCache.removeAll()
+            Task { await DepthEstimator.shared.unload() }
             airPlayPhotos.stop()
             ExternalDisplay.shared.clear()
         }
@@ -581,12 +685,14 @@ final class ViewerViewController: UIViewController {
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        setSpatial(false, animated: false)
         if isSlideshowRunning { stopSlideshow() }
     }
 
     // MARK: Actions
 
     @objc private func close() {
+        setSpatial(false, animated: false)
         videoControlsSuppressed = true
         videoControls.alpha = 0
         dismiss(animated: true)
@@ -595,6 +701,7 @@ final class ViewerViewController: UIViewController {
     /// The Edit screen for the current photo or video.
     @objc private func openEditor() {
         guard let item = currentItem else { return }
+        setSpatial(false, animated: false)
         if isSlideshowRunning { stopSlideshow() }
         currentPage?.video?.pause()
         let model = EditorModel(item: item, session: session)
@@ -845,6 +952,7 @@ final class ViewerViewController: UIViewController {
     /// Opens the share screen; the photo shrinks into its carousel.
     @objc private func share() {
         guard let item = currentItem else { return }
+        setSpatial(false, animated: false)
         if isSlideshowRunning { stopSlideshow() }
         if infoStop != .hidden { setInfoStop(.hidden, animated: false) }
         let page = currentPage
@@ -948,6 +1056,7 @@ final class ViewerViewController: UIViewController {
             }
         }
         applyPanelPosition()
+        if spatialOn { startSpatialOnCurrentPage() }
         filmstrip.setCurrent(currentIndex, animated: true)
         if let item = currentItem, infoStop != .hidden {
             infoModel?.show(assetID: item.id, thumbnail: placeholder(item))
@@ -988,6 +1097,7 @@ final class ViewerViewController: UIViewController {
     private func setInfoStop(_ stop: InfoPanelGeometry.Stop, animated: Bool, velocity: CGFloat = 0) {
         videoControlsSuppressed = stop != .hidden
         if stop != .hidden {
+            setSpatial(false, animated: false)
             ensureInfoPanel()
             currentPage?.zoomView.resetZoom(animated: false)
             if chromeHidden {
@@ -1036,6 +1146,7 @@ final class ViewerViewController: UIViewController {
         switch gesture.state {
         case .began:
             if infoStop == .hidden && velocity.y > 0 {
+                setSpatial(false, animated: false)
                 verticalMode = .dismiss
                 videoControlsSuppressed = true
             } else {

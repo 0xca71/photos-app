@@ -37,6 +37,8 @@ that it can run side by side with the official Immich app without uploading anyt
 | D11 | **Stacks:** `StacksV1` is synced; the Library shows one item per stack: the version on this iPhone, else the stack's primary, else the newest. | After an edit, the new version and the original are both on the server; showing both looks like a duplicate. |
 | D12 | **Offline:** grid thumbnails are never evicted once loaded (the cache limit applies to previews); Download All Thumbnails fills in the rest on Wi-Fi at the lowest request priority. Keep Offline stores chosen originals in Application Support (never purged by iOS, excluded from device backups). | The whole Library stays browsable without a connection, and chosen photos open at full quality. |
 
+| D13 | **Spatial Scene is a depth map plus a ray-marched view, all on the iPhone.** Depth Anything V2 Small (Core ML, Apache-2.0, bundled; `Scripts/fetch-depth-model.sh` downloads it at a pinned revision with checksums) estimates depth. Core Image sharpens the map along the photo's edges and builds a background layer (nearer things cut out, gaps filled from around them). A Metal fragment shader walks each pixel's ray from near to far through the depth map; where the shifted view opens a gap behind something, it shows the background layer. | The public iOS SDK has no spatial-scene API (it is marked unavailable on iOS), and the research models that produce full 3D scenes have non-commercial licences and are heavy for a phone. A depth map with a small viewpoint shift gives the same kind of effect in a few hundred milliseconds, with a licence that allows shipping it. Straight on, the frame equals the photo, so switching it on and off is seamless. |
+
 ## 3. Architecture
 
 Local Swift packages, all in Swift 6 language mode (strict concurrency), assembled by XcodeGen
@@ -98,6 +100,7 @@ Local Swift packages, all in Swift 6 language mode (strict concurrency), assembl
 - Uploads: two at a time, with the checksum header.
 - Sync: one stream, acknowledged per run of events; at most once a minute when triggered automatically.
 - Originals are fetched only on demand (zoom, share, Live Photo, Keep Offline).
+- Spatial Scene never asks the server for anything: it uses the image already on screen.
 
 ## 5. Security notes
 
@@ -133,6 +136,8 @@ Local Swift packages, all in Swift 6 language mode (strict concurrency), assembl
   `-VerifyChecksums`, `-BackupSelfTest`, `-ConnectivitySelfTest`, `-LaunchTiming`, `-ScrollSelfTest`,
   `-ScreensSelfTest`, `-EditorSelfTest`, `-EditorFilesSelfTest`, `-OfflineSelfTest`.
   `-EditorSaveSelfTest` and `-EditorRevertSelfTest` change the newest photo (iOS asks first).
+  `-SpatialSelfTest` opens the newest photo, times the depth model, saves the layers and frames from
+  several viewpoints, then drives the real button.
   `-VideoEditSelfTest` works on a duplicate of a video (`-VideoEditTarget NAME`): every editor tool,
   with the preview player's frames compared against the edit rendered from the source, the files a
   save writes, one real save, then the duplicate is deleted (iOS asks). `-VideoEditPreviewOnly` checks
