@@ -8,20 +8,43 @@ class ViewerBadgeButton: UIButton {
     static let glyph = UIColor { $0.userInterfaceStyle == .dark ? UIColor(white: 0.7, alpha: 1) : UIColor(white: 0.42, alpha: 1) }
     static let height: CGFloat = 19
 
+    // The icon, word and chevron are laid out by hand, each centred on the capsule's middle
+    // line (a button's own title layout sits capitals and the chevron a little low).
+    private let row = UIStackView()
+    private let icon = UIImageView()
+    private let word = UILabel()
+    private let chevron = UIImageView(image: UIImage(systemName: "chevron.down", withConfiguration: UIImage.SymbolConfiguration(pointSize: 10, weight: .regular)))
+
     override init(frame: CGRect) {
         super.init(frame: frame)
-        var configuration = UIButton.Configuration.plain()
-        configuration.imagePadding = 3
-        configuration.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 4, bottom: 0, trailing: 4.5)
-        configuration.baseForegroundColor = Self.glyph
-        configuration.background.backgroundColor = Self.fill
-        configuration.background.strokeColor = Self.border
-        configuration.background.strokeWidth = 1 / max(traitCollection.displayScale, 1)
-        configuration.background.cornerRadius = Self.height / 2
-        configuration.cornerStyle = .capsule
-        self.configuration = configuration
+        backgroundColor = Self.fill
+        layer.cornerRadius = Self.height / 2
+        layer.cornerCurve = .continuous
+        layer.borderWidth = 1 / max(traitCollection.displayScale, 1)
+        layer.borderColor = Self.border.resolvedColor(with: traitCollection).cgColor
+        row.axis = .horizontal
+        row.alignment = .center
+        row.spacing = 3.5
+        row.isUserInteractionEnabled = false
+        row.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(row)
+        for view in [icon, chevron] {
+            view.tintColor = Self.glyph
+            view.contentMode = .center
+            view.setContentHuggingPriority(.required, for: .horizontal)
+            view.setContentCompressionResistancePriority(.required, for: .horizontal)
+        }
+        word.textColor = Self.glyph
+        word.setContentCompressionResistancePriority(.required, for: .horizontal)
+        for view in [icon, word, chevron] { row.addArrangedSubview(view) }
+        row.setCustomSpacing(6, after: word)
         showsMenuAsPrimaryAction = true
-        heightAnchor.constraint(equalToConstant: Self.height).isActive = true
+        NSLayoutConstraint.activate([
+            heightAnchor.constraint(equalToConstant: Self.height),
+            row.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 5),
+            row.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -5.5),
+            row.centerYAnchor.constraint(equalTo: centerYAnchor),
+        ])
     }
 
     @available(*, unavailable)
@@ -32,16 +55,21 @@ class ViewerBadgeButton: UIButton {
         bounds.insetBy(dx: -8, dy: -13).contains(point)
     }
 
+    override var isHighlighted: Bool {
+        didSet { row.alpha = isHighlighted ? 0.55 : 1 }
+    }
+
+    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
+        super.traitCollectionDidChange(previous)
+        layer.borderColor = Self.border.resolvedColor(with: traitCollection).cgColor
+    }
+
     /// "WORD ⌄" with the icon in front.
     func setContent(title: String, image: UIImage?) {
-        let text = NSMutableAttributedString(string: title, attributes: [.font: UIFont.systemFont(ofSize: 12, weight: .regular), .kern: 0.1])
-        let chevron = NSTextAttachment()
-        chevron.image = UIImage(systemName: "chevron.down", withConfiguration: UIImage.SymbolConfiguration(pointSize: 10, weight: .regular))?
-            .withTintColor(Self.glyph.resolvedColor(with: traitCollection), renderingMode: .alwaysOriginal)
-        text.append(NSAttributedString(string: " "))
-        text.append(NSAttributedString(attachment: chevron))
-        configuration?.attributedTitle = AttributedString(text)
-        configuration?.image = image
+        // Capitals only: centre them on their own height, not on the font's taller line box.
+        let font = UIFont.systemFont(ofSize: 12, weight: .regular)
+        word.attributedText = NSAttributedString(string: title, attributes: [.font: font, .kern: 0.1])
+        icon.image = image
     }
 
     static func symbol(_ name: String) -> UIImage? {
