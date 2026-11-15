@@ -6,7 +6,7 @@
 
 **A native iOS photo library for your own server: it looks, feels and moves like a first-class iOS app, with your pictures on hardware you own.**
 
-![Version](https://img.shields.io/badge/version-0.8.0-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-0.8.1-blue?style=for-the-badge)
 ![Status](https://img.shields.io/badge/status-beta-orange?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/iOS-18%2B%20·%20iOS%2026%20Liquid%20Glass-black?style=for-the-badge)
 ![Swift](https://img.shields.io/badge/Swift-6%20strict%20concurrency-F05138?style=for-the-badge&logo=swift&logoColor=white)
@@ -66,7 +66,8 @@ Photos and personal details are blurred.
 - Video player with a scrubber and zoom.
 - Live Photos (press and hold), with LIVE / Off.
 - Long-press subject lift, Live Text and Look Up.
-- AirPlay for photos and videos, plus external displays.
+- On a TV: turn on Screen Mirroring or AirPlay with the iPhone's own controls and the TV shows the current photo or video full screen, without the app's buttons.
+- Portrait photos on the iPhone have a PORTRAIT badge: Portrait Off shows the photo without the background blur (a viewing choice; the library isn't changed).
 - **Spatial Scene:** a small button under ··· gives any photo depth. Tilt the iPhone and nearer things move against the background. The depth is worked out on the iPhone by a built-in model; nothing is uploaded and the photo isn't changed.
 - Share screen: carousel, options (location, format, all photo data) and extra actions.
 - Favourite, Hide (PIN-protected Locked Folder behind Face ID), Duplicate, Archive, Delete with Undo (from the iPhone and Cloud), Adjust Date & Location, Save to This iPhone.
