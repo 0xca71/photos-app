@@ -51,6 +51,7 @@ Photos and personal details are blurred.
 | Editing, subject lift | Done | Photo and video editor (tested on a device), long-press subject lift and Live Text |
 | M6 Albums, People, sharing, search | Done | Shared albums, partner sharing, People and smart search (remote ML), Sync Albums |
 | M7 Free Up Space, polish | Done | Free Up Space, offline thumbnails and Keep Offline, log viewer, accessibility pass |
+| Spatial Scene, viewer badges | Done | Depth for any photo on the iPhone (tested on a device), Portrait / Portrait Off, TV through the system's controls |
 
 ## Features
 
@@ -206,6 +207,12 @@ A free developer account (Personal Team) works. Free profiles last 7 days, so ru
 - **Storage:** limits for previews and downloaded originals.
 
 **Edit:** open a photo or video › the sliders button. Done saves; Cancel discards. To undo a saved edit later, open Edit › ··· › Revert to Original › Done.
+
+**Spatial Scene:** open a photo › tap the small hexagon button under ···, then tilt the iPhone. Tap it again to turn it off. It stays on as you swipe to other photos.
+
+**Portrait:** on a Portrait photo that's on the iPhone, tap PORTRAIT above the photo › Portrait Off to see it without the background blur.
+
+**On a TV:** turn on Screen Mirroring (or AirPlay) in Control Centre, then open a photo or video.
 
 **Free Up Space:** account picture › Free Up Space. Choose a date and what to keep, review, then remove. iOS asks before anything is deleted.
 
