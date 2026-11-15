@@ -182,7 +182,7 @@ final class ViewerPageCell: UICollectionViewCell {
         if let localID = item.localID, let phone = media.phone {
             let id = item.id
             let side = CGFloat(screenPixels)
-            phoneRequest = phone.requestImage(localID: localID, pixelSize: CGSize(width: side, height: side), fill: false, quality: .high) { [weak self] image, degraded in
+            phoneRequest = phone.requestImage(localID: localID, pixelSize: CGSize(width: side, height: side), fill: false, quality: .high, version: phoneVersion) { [weak self] image, degraded in
                 guard let self, self.item?.id == id else { return }
                 if degraded {
                     if self.quality < .placeholder { self.zoomView.setImage(image); self.quality = .placeholder }
@@ -268,7 +268,7 @@ final class ViewerPageCell: UICollectionViewCell {
             originalTask = Task { [weak self] in
                 defer { if self?.item?.id == id { self?.originalTask = nil } }
                 do {
-                    let image = try await phone.fullImage(localID: localID)
+                    let image = try await phone.fullImage(localID: localID, version: self?.phoneVersion ?? .current)
                     guard let self, self.item?.id == id else { return }
                     self.zoomView.imageView.preferredImageDynamicRange = UserDefaults.standard.bool(forKey: PhotosSettings.fullHDR) ? .high : .standard
                     self.show(image, quality: .original)
@@ -339,6 +339,31 @@ final class ViewerPageCell: UICollectionViewCell {
 
     @objc private func singleTapped() {
         onSingleTap?()
+    }
+
+    // MARK: Portrait
+
+    /// Portrait Off shows the photo as taken, without the depth effect's blur.
+    private var phoneVersion: PHImageRequestOptionsVersion {
+        item.map { PortraitSettings.isOff($0.id) } == true ? .unadjusted : .current
+    }
+
+    /// Switches a Portrait photo between its blurred and as-taken versions.
+    func setPortraitOff(_ off: Bool) {
+        guard let item, !item.isVideo, item.localID != nil else { return }
+        PortraitSettings.setOff(off, id: item.id)
+        stopSpatial(animated: true)
+        cancelLoads()
+        originalTask?.cancel()
+        originalTask = nil
+        settleWork?.cancel()
+        // Keep what's on screen until the other version arrives, then cross-fade to it.
+        quality = .placeholder
+        previewImage = nil
+        loadPreview()
+        let work = DispatchWorkItem { [weak self] in self?.loadOriginal() }
+        settleWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6, execute: work)
     }
 
     // MARK: Spatial scene

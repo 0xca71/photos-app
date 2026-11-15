@@ -1,5 +1,6 @@
 import CoreGraphics
 import ImageIO
+import Photos
 import UIKit
 import UniformTypeIdentifiers
 import simd
@@ -10,11 +11,59 @@ import simd
 /// "SHOT name" lines mark moments worth a screenshot of the phone. Nothing is changed or uploaded.
 @MainActor
 enum SpatialSelfTest {
-    static var isEnabled: Bool { ProcessInfo.processInfo.arguments.contains("-SpatialSelfTest") }
+    static var isEnabled: Bool { ProcessInfo.processInfo.arguments.contains("-SpatialSelfTest") || isPortraitTest }
+    /// `-PortraitSelfTest`: opens the newest Portrait photo on the iPhone and switches Portrait off and on.
+    static var isPortraitTest: Bool { ProcessInfo.processInfo.arguments.contains("-PortraitSelfTest") }
+
+    /// The newest photos on this iPhone taken with the depth effect.
+    static func portraitLocalIDs() -> [String] {
+        let options = PHFetchOptions()
+        options.predicate = NSPredicate(format: "(mediaSubtypes & %d) != 0", PHAssetMediaSubtype.photoDepthEffect.rawValue)
+        options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        options.fetchLimit = 30
+        var ids: [String] = []
+        PHAsset.fetchAssets(with: .image, options: options).enumerateObjects { asset, _, _ in ids.append(asset.localIdentifier) }
+        return ids
+    }
+
+    private static func runPortrait(viewer: ViewerViewController) async {
+        var waited = 0
+        while (viewer.spatialTestPage?.zoomView.imageView.image).map({ $0.size.width * $0.scale < 600 }) ?? true, waited < 150 {
+            try? await Task.sleep(for: .milliseconds(100))
+            waited += 1
+        }
+        guard let page = viewer.spatialTestPage, let item = page.item else { say("no page"); return say("done") }
+        let badge = viewer.portraitTestBadge
+        if let localID = item.localID, let asset = PHAsset.fetchAssets(withLocalIdentifiers: [localID], options: nil).firstObject {
+            let resources = PHAssetResource.assetResources(for: asset)
+            say("asset subtypes \(asset.mediaSubtypes.rawValue), resources \(resources.map { "\($0.type.rawValue):\($0.originalFilename)" }), adjusted \(asset.value(forKey: "hasAdjustments") as? Bool ?? false)")
+        } else {
+            say("item has no phone copy: localID \(item.localID ?? "nil")")
+        }
+        say("portrait badge shown \(!badge.isHidden), off \(badge.isOff), frame \(badge.convert(badge.bounds, to: viewer.view).integral)")
+        let wasOff = PortraitSettings.isOff(item.id)
+        try? await Task.sleep(for: .seconds(3))
+        say("SHOT portrait-on")
+        try? await Task.sleep(for: .seconds(4))
+        let before = page.zoomView.imageView.image.flatMap(SpatialSceneFactory.upright)
+        badge.set(off: true)
+        page.setPortraitOff(true)
+        try? await Task.sleep(for: .seconds(4))
+        let after = page.zoomView.imageView.image.flatMap(SpatialSceneFactory.upright)
+        if let before, let after { say(String(format: "portrait off differs from on by %.4f (blur removed shows as > 0)", difference(before, after))) }
+        say("SHOT portrait-off")
+        try? await Task.sleep(for: .seconds(4))
+        badge.set(off: wasOff)
+        page.setPortraitOff(wasOff)
+        try? await Task.sleep(for: .seconds(3))
+        say("restored: off \(PortraitSettings.isOff(item.id))")
+        say("done")
+    }
 
     static func say(_ text: String) { ScreenCapture.log("SPATIALTEST " + text) }
 
     static func run(viewer: ViewerViewController) async {
+        if isPortraitTest { return await runPortrait(viewer: viewer) }
         say("model in this build: \(DepthEstimator.isAvailable)")
         guard DepthEstimator.isAvailable else { return say("done") }
         var waited = 0

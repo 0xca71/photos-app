@@ -60,7 +60,7 @@ final class PhoneImages {
     /// (a quick degraded image first) and may run synchronously.
     @discardableResult
     func requestImage(
-        localID: String, pixelSize: CGSize, fill: Bool, quality: Quality,
+        localID: String, pixelSize: CGSize, fill: Bool, quality: Quality, version: PHImageRequestOptionsVersion = .current,
         handler: @escaping @MainActor (UIImage, _ isDegraded: Bool) -> Void
     ) -> PHImageRequestID? {
         guard let asset = asset(localID) else { return nil }
@@ -68,7 +68,7 @@ final class PhoneImages {
         options.isNetworkAccessAllowed = true
         options.deliveryMode = quality == .fast ? .opportunistic : .highQualityFormat
         options.resizeMode = quality == .fast ? .fast : .exact
-        options.version = .current
+        options.version = version
         return manager.requestImage(for: asset, targetSize: pixelSize, contentMode: fill ? .aspectFill : .aspectFit, options: options) { image, info in
             guard let image else { return }
             let degraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
@@ -78,17 +78,24 @@ final class PhoneImages {
 
     enum Quality { case fast, high }
 
+    /// A photo taken with the depth effect (Portrait) whose blur is an edit over the original,
+    /// so the original can be shown instead ("Portrait Off").
+    func isPortrait(localID: String) -> Bool {
+        guard let asset = asset(localID), asset.mediaType == .image, asset.mediaSubtypes.contains(.photoDepthEffect) else { return false }
+        return PHAssetResource.assetResources(for: asset).contains { $0.type == .fullSizePhoto || $0.type == .adjustmentData }
+    }
+
     func cancel(_ requestID: PHImageRequestID?) {
         if let requestID { manager.cancelImageRequest(requestID) }
     }
 
     /// The full-resolution photo with HDR (gain map) when present, for zooming in.
-    func fullImage(localID: String) async throws -> UIImage {
+    func fullImage(localID: String, version: PHImageRequestOptionsVersion = .current) async throws -> UIImage {
         guard let asset = asset(localID) else { throw ChecksumError.assetGone }
         let options = PHImageRequestOptions()
         options.isNetworkAccessAllowed = true
         options.deliveryMode = .highQualityFormat
-        options.version = .current
+        options.version = version
         let data: Data = try await withCheckedThrowingContinuation { continuation in
             manager.requestImageDataAndOrientation(for: asset, options: options) { data, _, _, info in
                 if let data {

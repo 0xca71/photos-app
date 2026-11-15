@@ -736,8 +736,14 @@ extension PhotoGridViewController: UICollectionViewDataSource, UICollectionViewD
             guard let self else { return }
             // An older Cloud photo (its full preview is sure to exist), scrolled into view first.
             let older = self.items.prefix(max(self.items.count - 300, 0))
+            var portrait: Int?
+            if SpatialSelfTest.isPortraitTest {
+                let ids = SpatialSelfTest.portraitLocalIDs()
+                portrait = ids.lazy.compactMap { id in self.items.lastIndex(where: { $0.localID == id }) }.first
+                if portrait == nil { SpatialSelfTest.say("no Portrait photo on this iPhone (\(ids.count) found in the library)"); return SpatialSelfTest.say("done") }
+            }
             guard self.presentedViewController == nil,
-                  let index = older.lastIndex(where: { !$0.isVideo && !$0.isScreenshot && $0.hasCamera && $0.isRemote && $0.localID == nil })
+                  let index = portrait ?? older.lastIndex(where: { !$0.isVideo && !$0.isScreenshot && $0.hasCamera && $0.isRemote && $0.localID == nil })
                     ?? self.items.lastIndex(where: { !$0.isVideo }) else { return }
             let path = IndexPath(item: index, section: 0)
             self.collectionView.scrollToItem(at: path, at: .centeredVertically, animated: false)

@@ -9,19 +9,19 @@ final class SpatialSceneBadge: UIControl {
     private(set) var mode = Mode.off
     private let stack = UIStackView()
     private let icon = UIImageView(image: SpatialSceneBadge.glyph(side: 13))
-    private let chevron = UIImageView(image: UIImage(systemName: "chevron.right", withConfiguration: UIImage.SymbolConfiguration(pointSize: 9, weight: .semibold)))
+    private let chevron = UIImageView(image: UIImage(systemName: "chevron.right", withConfiguration: UIImage.SymbolConfiguration(pointSize: 10.5, weight: .regular)))
     private let label = UILabel()
 
-    private static let offFill = UIColor { $0.userInterfaceStyle == .dark ? UIColor(white: 0.17, alpha: 0.92) : UIColor(white: 0.89, alpha: 0.92) }
-    private static let offBorder = UIColor { $0.userInterfaceStyle == .dark ? UIColor(white: 1, alpha: 0.2) : UIColor(white: 0, alpha: 0.08) }
-    private static let offGlyph = UIColor { $0.userInterfaceStyle == .dark ? UIColor(white: 0.74, alpha: 1) : UIColor(white: 0.42, alpha: 1) }
+    private static let offFill = ViewerBadgeButton.fill
+    private static let offBorder = ViewerBadgeButton.border
+    private static let offGlyph = ViewerBadgeButton.glyph
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         layer.cornerCurve = .continuous
         stack.axis = .horizontal
         stack.alignment = .center
-        stack.spacing = 3
+        stack.spacing = 5
         stack.isUserInteractionEnabled = false
         stack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)
@@ -33,11 +33,11 @@ final class SpatialSceneBadge: UIControl {
         label.attributedText = NSAttributedString(text)
         label.textColor = .white
         for view in [icon, label, chevron] { stack.addArrangedSubview(view) }
-        stack.setCustomSpacing(4, after: icon)
+        stack.setCustomSpacing(5, after: icon)
         NSLayoutConstraint.activate([
-            heightAnchor.constraint(equalToConstant: 19),
-            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 6),
-            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6),
+            heightAnchor.constraint(equalToConstant: ViewerBadgeButton.height),
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 5),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -5.5),
             stack.centerYAnchor.constraint(equalTo: centerYAnchor),
             icon.widthAnchor.constraint(equalToConstant: 13),
             icon.heightAnchor.constraint(equalToConstant: 13),
@@ -104,14 +104,14 @@ final class SpatialSceneBadge: UIControl {
     static func glyph(side: CGFloat) -> UIImage {
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: side, height: side))
         return renderer.image { _ in
-            let center = CGPoint(x: side / 2, y: side / 2), radius = side * 0.48, line = max(side * 0.085, 1)
+            let center = CGPoint(x: side / 2, y: side / 2), radius = side * 0.49, line = max(side * 0.085, 1)
             // Point-up hexagon with rounded corners.
             let corners = (0..<6).map { index -> CGPoint in
                 let angle = CGFloat(index) * .pi / 3 - .pi / 2
                 return CGPoint(x: center.x + (radius - line / 2) * cos(angle), y: center.y + (radius - line / 2) * sin(angle))
             }
             let hexagon = UIBezierPath()
-            let rounding = side * 0.11
+            let rounding = side * 0.09
             for index in 0..<6 {
                 let current = corners[index], previous = corners[(index + 5) % 6], next = corners[(index + 1) % 6]
                 func toward(_ point: CGPoint) -> CGPoint {
@@ -133,10 +133,13 @@ final class SpatialSceneBadge: UIControl {
             UIGraphicsGetCurrentContext()?.saveGState()
             hexagon.addClip()
             let hills = UIBezierPath()
-            hills.move(to: CGPoint(x: 0, y: side * 0.60))
-            hills.addQuadCurve(to: CGPoint(x: side * 0.44, y: side * 0.66), controlPoint: CGPoint(x: side * 0.24, y: side * 0.54))
-            hills.addQuadCurve(to: CGPoint(x: side * 0.70, y: side * 0.50), controlPoint: CGPoint(x: side * 0.56, y: side * 0.62))
-            hills.addQuadCurve(to: CGPoint(x: side, y: side * 0.64), controlPoint: CGPoint(x: side * 0.84, y: side * 0.48))
+            // Two peaks: a small one on the left and a taller one to the right.
+            hills.move(to: CGPoint(x: 0, y: side * 0.74))
+            hills.addLine(to: CGPoint(x: side * 0.31, y: side * 0.59))
+            hills.addLine(to: CGPoint(x: side * 0.45, y: side * 0.67))
+            hills.addLine(to: CGPoint(x: side * 0.67, y: side * 0.46))
+            hills.addLine(to: CGPoint(x: side, y: side * 0.74))
+            hills.lineJoinStyle = .round
             hills.addLine(to: CGPoint(x: side, y: side))
             hills.addLine(to: CGPoint(x: 0, y: side))
             hills.close()
@@ -144,8 +147,8 @@ final class SpatialSceneBadge: UIControl {
             UIGraphicsGetCurrentContext()?.restoreGState()
 
             // The sun.
-            let sun = side * 0.085
-            UIBezierPath(ovalIn: CGRect(x: side * 0.38 - sun, y: side * 0.35 - sun, width: sun * 2, height: sun * 2)).fill()
+            let sun = side * 0.095
+            UIBezierPath(ovalIn: CGRect(x: side * 0.35 - sun, y: side * 0.36 - sun, width: sun * 2, height: sun * 2)).fill()
         }.withRenderingMode(.alwaysTemplate)
     }
 }

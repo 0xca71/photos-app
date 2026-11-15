@@ -55,6 +55,9 @@ final class ViewerViewController: UIViewController {
         }
     }
     private let liveBadge = LiveBadgeButton()
+    private let portraitBadge = PortraitBadgeButton()
+    /// The badges at the top left (Portrait, Live), side by side when a photo has both.
+    private let badgeRow = UIStackView()
     private let spatialBadge = SpatialSceneBadge()
     /// Spatial scenes are on: each photo paged to is shown with depth until it's turned off.
     private var spatialOn = false
@@ -157,7 +160,7 @@ final class ViewerViewController: UIViewController {
         view.addSubview(collectionView)
 
         videoControls.alpha = 0
-        for subview in [topBar, filmstrip, videoControls, bottomBar, banner, liveBadge, spatialBadge] as [UIView] {
+        for subview in [topBar, filmstrip, videoControls, bottomBar, banner, badgeRow, spatialBadge] as [UIView] {
             subview.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview(subview)
         }
@@ -176,17 +179,22 @@ final class ViewerViewController: UIViewController {
             // Above the filmstrip, which stays visible for videos.
             videoControls.bottomAnchor.constraint(equalTo: filmstrip.topAnchor, constant: -10),
             videoControls.heightAnchor.constraint(equalToConstant: 76),
-            liveBadge.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            liveBadge.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 12),
-            liveBadge.heightAnchor.constraint(equalToConstant: 30),
+            badgeRow.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            badgeRow.centerYAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 28),
             banner.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
             banner.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
             banner.bottomAnchor.constraint(equalTo: filmstrip.topAnchor, constant: -12),
         ])
 
-        // Under the ··· button, level with the Live badge.
+        badgeRow.axis = .horizontal
+        badgeRow.spacing = 8
+        badgeRow.alignment = .center
+        badgeRow.addArrangedSubview(portraitBadge)
+        badgeRow.addArrangedSubview(liveBadge)
+        portraitBadge.onChange = { [weak self] off in self?.currentPage?.setPortraitOff(off) }
+        // Under the ··· button, level with the badges on the left.
         spatialBadge.trailingAnchor.constraint(equalTo: topBar.menuButton.trailingAnchor).isActive = true
-        spatialBadge.centerYAnchor.constraint(equalTo: liveBadge.centerYAnchor).isActive = true
+        spatialBadge.centerYAnchor.constraint(equalTo: badgeRow.centerYAnchor).isActive = true
         spatialBadge.alpha = 0
         spatialBadge.addTarget(self, action: #selector(spatialTapped), for: .touchUpInside)
         liveBadge.onChange = { [weak self] off in self?.currentPage?.setLiveOff(off) }
@@ -332,8 +340,7 @@ final class ViewerViewController: UIViewController {
     private func setChromeAlpha(_ alpha: CGFloat) {
         let openness = infoOpenness
         topBar.alpha = alpha * (1 - openness)
-        let isLive = currentItem?.isLivePhoto == true
-        liveBadge.alpha = isLive ? alpha * (1 - openness) : 0
+        badgeRow.alpha = alpha * (1 - openness)
         // The spatial badge stays up while its scene shows, when everything else is hidden.
         spatialBadge.alpha = canShowSpatial ? (spatialOn ? 1 : alpha * (1 - openness)) : 0
         let isVideo = currentItem?.isVideo == true && currentPage?.video != nil
@@ -344,7 +351,7 @@ final class ViewerViewController: UIViewController {
         if scrubbing {
             topBar.alpha = 0
             bottomBar.alpha = 0
-            liveBadge.alpha = 0
+            badgeRow.alpha = 0
             return
         }
         bottomBar.alpha = alpha
@@ -428,6 +435,7 @@ final class ViewerViewController: UIViewController {
     var spatialTestPage: ViewerPageCell? { currentPage }
     var spatialTestBadge: SpatialSceneBadge { spatialBadge }
     func spatialTestTap() { spatialTapped() }
+    var portraitTestBadge: PortraitBadgeButton { portraitBadge }
 
     private func toggleChrome() {
         chromeHidden.toggle()
@@ -452,7 +460,12 @@ final class ViewerViewController: UIViewController {
         bottomBar.setChangeable(!isShared(item))
         bottomBar.setInfoShown(infoStop != .hidden)
         topBar.menuButton.menu = moreMenu(for: item)
+        liveBadge.isHidden = !item.isLivePhoto
         liveBadge.set(off: LivePhotoSettings.isOff(item.id))
+        // Portrait photos on this iPhone can be seen without their background blur.
+        let isPortrait = !item.isVideo && item.localID.map { session.phoneImages.isPortrait(localID: $0) } == true
+        portraitBadge.isHidden = !isPortrait
+        if isPortrait { portraitBadge.set(off: PortraitSettings.isOff(item.id)) }
         if spatialOn, !canShowSpatial { setSpatial(false) }
         setChromeAlpha(chromeHidden ? 0 : 1)
     }
