@@ -6,7 +6,7 @@
 
 **A native iOS photo library for your own server: it looks, feels and moves like a first-class iOS app, with your pictures on hardware you own.**
 
-![Version](https://img.shields.io/badge/version-0.8.2-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-0.8.3-blue?style=for-the-badge)
 ![Status](https://img.shields.io/badge/status-beta-orange?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/iOS-18%2B%20·%20iOS%2026%20Liquid%20Glass-black?style=for-the-badge)
 ![Swift](https://img.shields.io/badge/Swift-6%20strict%20concurrency-F05138?style=for-the-badge&logo=swift&logoColor=white)
@@ -64,7 +64,7 @@ Photos and personal details are blurred.
 **Viewer**
 - Zoom transition, paging, pinch and double-tap zoom, swipe down to close, inline info panel with map.
 - Full-resolution HDR originals on demand.
-- Video player with a scrubber and zoom.
+- Video player with a scrubber and zoom. With Auto-Play Motion on, videos start muted; tap the speaker to turn the sound on for the rest of that viewing.
 - Live Photos (press and hold), with LIVE / Off.
 - Long-press subject lift, Live Text and Look Up.
 - On a TV: turn on Screen Mirroring or AirPlay with the iPhone's own controls and the TV shows the current photo or video full screen, without the app's buttons.
