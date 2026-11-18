@@ -6,7 +6,7 @@
 
 **A native iOS photo library for your own server: it looks, feels and moves like a first-class iOS app, with your pictures on hardware you own.**
 
-![Version](https://img.shields.io/badge/version-0.8.1-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-0.8.2-blue?style=for-the-badge)
 ![Status](https://img.shields.io/badge/status-beta-orange?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/iOS-18%2B%20·%20iOS%2026%20Liquid%20Glass-black?style=for-the-badge)
 ![Swift](https://img.shields.io/badge/Swift-6%20strict%20concurrency-F05138?style=for-the-badge&logo=swift&logoColor=white)
@@ -253,6 +253,7 @@ How the app protects your account and photos, how to report a problem, and the a
 - **[Depth Anything V2](https://github.com/DepthAnything/Depth-Anything-V2)** (Small, in [Core ML form](https://huggingface.co/apple/coreml-depth-anything-v2-small)): the depth model behind Spatial Scene, Apache-2.0. See [`docs/THIRD_PARTY_NOTICES.md`](docs/THIRD_PARTY_NOTICES.md).
 - This app is independent, uses its own icon, and is not affiliated with any platform vendor.
 - Built by one developer, with Claude (Anthropic) as a pair programmer.
+- Contributions: [@brandonegg](https://github.com/brandonegg) (the system tab bar, with Search as its own tab), and single sign-on from [@ethankember](https://github.com/ethankember)'s fork.
 
 ## License
 
