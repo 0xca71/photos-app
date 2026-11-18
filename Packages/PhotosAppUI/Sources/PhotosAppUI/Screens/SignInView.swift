@@ -13,6 +13,8 @@ struct SignInView: View {
     @State private var password = ""
     @State private var working: Method?
     @State private var errorMessage: String?
+    /// How this server lets people sign in, once it has answered.
+    @State private var options: CloudSignInOptions?
     @FocusState private var focus: Field?
     @Environment(\.webAuthenticationSession) private var webAuthenticationSession
 
@@ -21,8 +23,9 @@ struct SignInView: View {
 
     private var isWorking: Bool { working != nil }
     /// Until the server has answered, both ways in are offered.
-    private var offersPassword: Bool { model.signInOptions?.password ?? true }
-    private var offersSingleSignOn: Bool { model.signInOptions?.singleSignOn ?? true }
+    private var offersPassword: Bool { options?.password ?? true }
+    /// Only once the server says it has single sign-on (no button that appears and vanishes).
+    private var offersSingleSignOn: Bool { options?.singleSignOn ?? false }
 
     var body: some View {
         Form {
@@ -71,7 +74,7 @@ struct SignInView: View {
                 Section {
                     Button(action: signInWithSingleSignOn) {
                         HStack {
-                            Text(model.signInOptions?.singleSignOnTitle ?? "Sign In with Single Sign-On")
+                            Text(options?.singleSignOnTitle ?? "Sign In with Single Sign-On")
                             Spacer()
                             if working == .singleSignOn { ProgressView() }
                         }
@@ -90,7 +93,8 @@ struct SignInView: View {
         }
         // Again whenever another address starts answering (e.g. after editing the server below).
         .task(id: model.connection.activeServer?.url) {
-            await model.refreshSignInOptions()
+            let answer = await model.signInOptions()
+            if !Task.isCancelled { options = answer }
         }
     }
 

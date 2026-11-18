@@ -6,37 +6,14 @@ import SwiftUI
 /// (accounts, server, sync, storage, troubleshooting).
 struct CloudServerSettingsView: View {
     let model: AppModel
-
-    var body: some View {
-        List {
-            AppSettingsSections(model: model)
-        }
-        .listStyle(.insetGrouped)
-        .navigationTitle("Cloud Server Settings")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-/// The sections of Cloud Server Settings.
-struct AppSettingsSections: View {
-    let model: AppModel
     @State private var addingAccount = false
     @State private var confirmSignOut: Account?
 
     var body: some View {
-        Group {
-            accountsSection
-            connectionSection
-            ServerAddressSection(model: model)
-            if let session = model.session {
-                PhoneLibrarySection(session: session)
-                BackupServerSection(session: session)
-                syncSection(session)
-                storageSection(session)
-                HiddenSettingsSection(vault: session.hiddenVault)
-                TroubleshootingSection(session: session)
-            }
+        List {
+            AppSettingsSections(model: model, addingAccount: $addingAccount, confirmSignOut: $confirmSignOut)
         }
+        .listStyle(.insetGrouped)
         .sheet(isPresented: $addingAccount) {
             NavigationStack {
                 SignInView(model: model, initialEmail: model.session?.needsSignIn == true ? model.accounts.activeAccount?.email ?? "" : "") {
@@ -61,6 +38,33 @@ struct AppSettingsSections: View {
             }
         } message: {
             Text("Cached thumbnails and the synced library index for this account are removed from this iPhone. Nothing is deleted on the server.")
+        }
+        .navigationTitle("Cloud Server Settings")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// The sections of Cloud Server Settings.
+struct AppSettingsSections: View {
+    let model: AppModel
+    /// Owned by the screen: presentations attached to these sections (a Group of List
+    /// sections) would be copied onto every section and could close themselves.
+    @Binding var addingAccount: Bool
+    @Binding var confirmSignOut: Account?
+
+    var body: some View {
+        Group {
+            accountsSection
+            connectionSection
+            ServerAddressSection(model: model)
+            if let session = model.session {
+                PhoneLibrarySection(session: session)
+                BackupServerSection(session: session)
+                syncSection(session)
+                storageSection(session)
+                HiddenSettingsSection(vault: session.hiddenVault)
+                TroubleshootingSection(session: session)
+            }
         }
     }
 

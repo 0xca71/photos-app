@@ -21,8 +21,6 @@ public final class AppModel {
     public private(set) var versionWarning: String?
     /// Shown instead of the library when opening the account's database fails.
     public private(set) var sessionError: String?
-    /// How the current server lets people sign in (password, single sign-on); nil until it answers.
-    public private(set) var signInOptions: CloudSignInOptions?
 
     /// The Cloud server type (Immich today); everything server-specific goes through it.
     public let provider: any CloudProvider
@@ -296,24 +294,19 @@ public final class AppModel {
         try completeSignIn(result, via: server)
     }
 
-    /// Reads how the current server lets people sign in; nil while no server answers.
-    public func refreshSignInOptions() async {
-        guard let server = connection.activeServer else {
-            signInOptions = nil
-            return
-        }
-        let options: CloudSignInOptions?
+    /// How the current server lets people sign in; nil while no server answers. Returned rather
+    /// than stored, so asking doesn't re-render screens that observe the model (it closed the
+    /// Add Account sheet).
+    public func signInOptions() async -> CloudSignInOptions? {
+        guard let server = connection.activeServer else { return nil }
         do {
-            options = try await provider.signInOptions(at: server.url)
+            return try await provider.signInOptions(at: server.url)
         } catch {
-            options = nil
             if !Task.isCancelled {
                 Log.networking.notice("Sign-in options unavailable: \(CloudError.wrap(error, operation: "Sign-in options").message, privacy: .public)")
             }
+            return nil
         }
-        // A newer check (the address changed meanwhile) has the final say.
-        guard !Task.isCancelled, connection.activeServer?.url == server.url else { return }
-        signInOptions = options
     }
 
     private func reachableServer() async throws -> ActiveServer {
