@@ -723,7 +723,7 @@ extension PhotoGridViewController: UICollectionViewDataSource, UICollectionViewD
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         collectionView.deselectItem(at: indexPath, animated: false)
-        guard indexPath.item < items.count, !isZooming, presentedViewController == nil else { return }
+        guard indexPath.item < items.count, !isZooming, let presenter = presenterForViewer() else { return }
         if isSelecting {
             let id = items[indexPath.item].id
             let selected = !isSelected(id)
@@ -741,7 +741,9 @@ extension PhotoGridViewController: UICollectionViewDataSource, UICollectionViewD
             return self.placeholders.image(for: item)
         }
         guard let viewer = makeViewer?(items, indexPath.item, self, placeholderFor) else { return }
-        present(viewer, animated: true)
+        // The keyboard goes away (Search's field), then the photo opens on top.
+        view.window?.endEditing(true)
+        presenter.present(viewer, animated: true)
         if SpatialSelfTest.isEnabled, let viewer = viewer as? ViewerViewController {
             Task { await SpatialSelfTest.run(viewer: viewer) }
         }
@@ -773,6 +775,16 @@ extension PhotoGridViewController: UICollectionViewDataSource, UICollectionViewD
                 self.collectionView(self.collectionView, didSelectItemAt: path)
             }
         }
+    }
+
+    /// Who opens a photo: this grid, or, while a search field is active (it shows the
+    /// system's search interface on top), that interface. Nil while something else is
+    /// already open, so a quick second tap doesn't open the viewer twice.
+    private func presenterForViewer() -> UIViewController? {
+        guard var top = presentedViewController else { return self }
+        while let next = top.presentedViewController { top = next }
+        guard top is UISearchController, !top.isBeingDismissed else { return nil }
+        return top
     }
 
     func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
