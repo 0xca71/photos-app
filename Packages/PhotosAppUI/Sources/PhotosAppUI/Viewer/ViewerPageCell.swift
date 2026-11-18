@@ -459,7 +459,7 @@ final class ViewerPageCell: UICollectionViewCell {
         if let video {
             video.togglePlay()
         } else {
-            startVideo(autoPlay: true)
+            startVideo(autoPlay: true, byUser: true)
         }
         onPlayTapped?()
     }
@@ -520,10 +520,13 @@ final class ViewerPageCell: UICollectionViewCell {
 
     /// Creates the player inside the zoom container (so it zooms like a photo) and loads
     /// the phone's copy, or streams the Cloud original.
-    func startVideo(autoPlay: Bool) {
+    /// `byUser`: started with the play button (with sound); otherwise it started by itself
+    /// and stays muted until the user turns the sound on.
+    func startVideo(autoPlay: Bool, byUser: Bool = false) {
         guard let item, item.isVideo, let media else { return }
         if video == nil {
             let playback = VideoPlayback()
+            playback.isMuted = !(byUser || VideoPlayback.soundOn)
             let view = PlayerView(player: playback.player)
             view.frame = zoomView.imageView.bounds
             view.autoresizingMask = [.flexibleWidth, .flexibleHeight]

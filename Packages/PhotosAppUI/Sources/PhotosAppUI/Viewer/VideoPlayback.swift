@@ -15,8 +15,16 @@ final class VideoPlayback {
     private(set) var currentTime: Double = 0
     var isMuted: Bool {
         get { player.isMuted }
-        set { player.isMuted = newValue; onChange?() }
+        set {
+            player.isMuted = newValue
+            if wantsPlay { applyAudioSession() }
+            onChange?()
+        }
     }
+
+    /// Sound for videos that start by themselves, for as long as the viewer is open: off at
+    /// first (they play muted, as the system viewer does), on once the user unmutes one.
+    static var soundOn = false
     var loops = UserDefaults.standard.bool(forKey: PhotosSettings.loopVideos)
     /// Called on play/pause, progress and readiness changes (for the controls).
     var onChange: (() -> Void)?
@@ -138,10 +146,20 @@ final class VideoPlayback {
 
     func play() {
         wantsPlay = true
-        // Plays through the silent switch.
-        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
-        try? AVAudioSession.sharedInstance().setActive(true)
+        applyAudioSession()
         if isReady { player.play() }
+    }
+
+    /// With sound, video plays through the silent switch and takes over from other audio.
+    /// Muted, it leaves whatever else is playing (music, a podcast) alone.
+    private func applyAudioSession() {
+        let session = AVAudioSession.sharedInstance()
+        if player.isMuted {
+            try? session.setCategory(.ambient, mode: .moviePlayback, options: [.mixWithOthers])
+        } else {
+            try? session.setCategory(.playback, mode: .moviePlayback)
+        }
+        try? session.setActive(true)
     }
 
     func pause() {

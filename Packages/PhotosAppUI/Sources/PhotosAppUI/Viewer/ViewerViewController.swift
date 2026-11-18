@@ -136,6 +136,8 @@ final class ViewerViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        // Each time the viewer opens, videos that start by themselves start muted again.
+        VideoPlayback.soundOn = false
         view.backgroundColor = .clear
         backgroundView.frame = view.bounds
         backgroundView.autoresizingMask = [.flexibleWidth, .flexibleHeight]

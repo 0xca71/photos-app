@@ -145,6 +145,8 @@ final class VideoControlsView: UIView {
     @objc private func muteTapped() {
         guard let playback else { return }
         playback.isMuted.toggle()
+        // Later videos in this viewing start with sound too (or muted again).
+        VideoPlayback.soundOn = !playback.isMuted
         refresh()
     }
 
