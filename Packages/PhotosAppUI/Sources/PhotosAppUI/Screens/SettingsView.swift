@@ -61,6 +61,7 @@ struct AppSettingsSections: View {
 
     var body: some View {
         Group {
+            aboutSection
             accountsSection
             connectionSection
             ServerAddressSection(model: model)
@@ -72,7 +73,6 @@ struct AppSettingsSections: View {
                 HiddenSettingsSection(vault: session.hiddenVault)
                 TroubleshootingSection(session: session)
             }
-            aboutSection
         }
     }
 
