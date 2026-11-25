@@ -10,19 +10,32 @@ public struct RootView: View {
     }
 
     public var body: some View {
-        Group {
-            if model.isSignedIn {
-                PhotosShell(model: model)
-            } else {
-                NavigationStack {
-                    SignInView(model: model)
+        ZStack {
+            Group {
+                if model.isSignedIn {
+                    PhotosShell(model: model)
+                } else {
+                    NavigationStack {
+                        SignInView(model: model)
+                    }
                 }
+            }
+            if model.appLock.isEnabled && scenePhase != .active {
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .ignoresSafeArea()
+                    .accessibilityHidden(true)
+            }
+            if model.appLock.isLocked && scenePhase == .active {
+                AppLockUnlockView(appLock: model.appLock)
+                    .transition(.opacity)
             }
         }
         .onAppear { model.start() }
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .active: model.sceneBecameActive()
+            case .inactive: model.sceneBecameInactive()
             case .background: model.sceneEnteredBackground()
             default: break
             }

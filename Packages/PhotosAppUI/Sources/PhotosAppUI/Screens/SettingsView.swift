@@ -62,6 +62,7 @@ struct AppSettingsSections: View {
     var body: some View {
         Group {
             aboutSection
+            appLockSection
             accountsSection
             connectionSection
             ServerAddressSection(model: model)
@@ -107,6 +108,16 @@ struct AppSettingsSections: View {
             Button(model.session?.needsSignIn == true ? "Sign In Again" : "Add Account") {
                 addingAccount = true
             }
+        }
+    }
+
+    private var appLockSection: some View {
+        Section {
+            NavigationLink("App Lock") {
+                AppLockSettingsView(appLock: model.appLock)
+            }
+        } footer: {
+            Text("App Lock protects this app on this iPhone. It is stored locally and is unrelated to your Cloud server.")
         }
     }
 
