@@ -1,0 +1,75 @@
+name: Build unsigned IPA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unsigned-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build unsigned IPA
+    runs-on: macos-26
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out selected branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Show tool versions
+        run: |
+          xcodebuild -version
+          xcodegen --version
+
+      - name: Fetch depth model
+        run: Scripts/fetch-depth-model.sh
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build unsigned app
+        run: |
+          xcodebuild \
+            -project Photos.xcodeproj \
+            -scheme Photos \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY='' \
+            build
+
+      - name: Package IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          app_path="build/DerivedData/Build/Products/Release-iphoneos/Photos.app"
+          test -d "$app_path"
+
+          rm -rf build/Payload
+          mkdir -p build/Payload
+          cp -R "$app_path" build/Payload/Photos.app
+
+          (cd build && zip -qry Photos.ipa Payload)
+          test -s build/Photos.ipa
+          unzip -l build/Photos.ipa | sed -n '1,20p'
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Photos-unsigned-ipa-${{ github.run_id }}
+          path: build/Photos.ipa
+          if-no-files-found: error
+          retention-days: 14
