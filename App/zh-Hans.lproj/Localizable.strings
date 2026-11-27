@@ -47,6 +47,8 @@
 "Allow Featured Photos and Memories to automatically appear on this device." = "允许精选照片和回忆自动出现在此设备上。";
 "Allow Full Access" = "允许完全访问";
 "Allow recent holiday events for your home country or region to automatically appear on this device." = "允许您所在国家或地区最近的节日活动自动显示在此设备上。";
+"App Lock" = "应用锁";
+"App Lock protects this app on this iPhone. It is stored locally and is unrelated to your Cloud server." = "应用锁只保护此 iPhone 上的应用，密码保存在本机，与 Cloud 服务器无关。";
 "App Version" = "应用版本";
 "Archive" = "存档";
 "Archived" = "已存档";
@@ -80,12 +82,14 @@
 "Captions are saved in Cloud. Back this up first." = "字幕保存在云端。首先支持这一点。";
 "Captured" = "被捕获";
 "Captured by Me" = "被我捕获";
+"Change App Lock Password" = "更改应用锁密码";
 "Change Layout" = "改变布局";
 "Check Again" = "再次检查";
 "Check Connection" = "检查连接";
 "Choose Automatic for the best format for the destination or Current to prevent file format conversions. Photos and videos may convert to JPEG, PNG and H.264 formats if you choose Most Compatible." = "选择“自动”作为目标的最佳格式，或选择“当前”以防止文件格式转换。如果您选择“最兼容”，照片和视频可能会转换为 JPEG、PNG 和 H.264 格式。";
 "Choose Photo" = "选择照片";
 "Choose Your PIN" = "选择您的 PIN 码";
+"Choose a 4- or 6-digit password." = "请选择 4 位或 6 位数字密码。";
 "Clear" = "清除";
 "Clear Downloaded Originals" = "清除下载的原件";
 "Clear Saved Logs" = "清除保存的日志";
@@ -109,6 +113,7 @@
 "Copied" = "已复制";
 "Copy" = "复制";
 "Couldn't Sync with Cloud" = "无法与云端同步";
+"Couldn’t Complete" = "无法完成";
 "Couldn’t Load Albums" = "无法加载相册";
 "Couldn’t Load Library" = "无法加载库";
 "Create Shared Album Link" = "创建共享相册链接";
@@ -149,6 +154,7 @@
 "Edited" = "已编辑";
 "Email" = "电子邮件";
 "Enter Your Cloud PIN Once" = "输入您的云 PIN 一次";
+"Enter your app password." = "请输入应用密码。";
 "Errors Only" = "仅错误";
 "Export Unmodified Originals" = "导出未修改的原件";
 "Exposure" = "曝光";
@@ -186,6 +192,7 @@
 "IN-FRAME" = "框架内";
 "In-App Notifications" = "应用内通知";
 "Include" = "包括";
+"Incorrect password." = "密码错误。";
 "Info" = "信息";
 "Item" = "项目";
 "Items" = "项目";
@@ -335,6 +342,7 @@
 "Removed from Album" = "已从相册中删除";
 "Removes photos and videos from this iPhone that are safely backed up to Cloud. They stay in your Library and open from Cloud. Only items in your own Cloud library and not in its Recently Deleted are removed, and each one is checked with the server first." = "从此 iPhone 中删除安全备份到云端的照片和视频。它们保留在您的图书馆中并从云端打开。仅删除您自己的云库中的项目，而不是最近删除的项目，并且首先会通过服务器检查每一项。";
 "Reorder" = "重新排序";
+"Require Password" = "要求输入密码";
 "Reset People & Pets Suggestions" = "重置人物和宠物建议";
 "Reset Suggested Memories" = "重置建议的记忆";
 "Reset to Default Order" = "重置为默认顺序";
@@ -359,6 +367,7 @@
 "Server Not Reachable" = "服务器无法访问";
 "Server addresses, accounts, sync, storage and diagnostics for your Cloud server." = "云服务器的服务器地址、帐户、同步、存储和诊断。";
 "Set Up" = "设置";
+"Set Up App Lock" = "设置应用锁";
 "Set Up Hidden" = "设置隐藏";
 "Shadows" = "阴影";
 "Share" = "共享";
@@ -412,6 +421,7 @@
 "Test Connection" = "测试连接";
 "That PIN didn’t work. Check it in the Cloud web app under Account Settings › PIN Code." = "该 PIN 码无效。在云网络应用程序中的帐户设置 › PIN 码下进行检查。";
 "The PIN must be exactly 6 digits." = "PIN 码必须正好是 6 位数字。";
+"The app is locked" = "应用已锁定";
 "The app stopped while preparing this file three times, so it was skipped. Try Again retries it." = "应用程序在准备此文件时停止了 3 次，因此被跳过。再试一次重试。";
 "The app stopped while preparing this file." = "应用程序在准备此文件时停止。";
 "The edit couldn't be saved." = "无法保存编辑。";
@@ -419,6 +429,7 @@
 "The home address is used when it answers within 1.5 seconds; otherwise the away address (Tailscale)." = "1.5秒内应答即使用家庭地址；否则为离开地址 (Tailscale)。";
 "The original is in iCloud and will be downloaded on Wi-Fi." = "原件位于 iCloud 中，可通过 Wi-Fi 下载。";
 "The original is only in iCloud; downloading from iCloud is off." = "原版仅在 iCloud 中；从 iCloud 下载已关闭。";
+"The password must be 4 or 6 digits." = "密码必须是 4 位或 6 位数字。";
 "The photo couldn't be loaded." = "照片无法加载。";
 "The photo hasn't loaded yet." = "照片尚未加载。";
 "The spatial scene couldn't be drawn on this iPhone." = "空间场景无法在这款 iPhone 上绘制。";
@@ -446,12 +457,14 @@
 "Try Again" = "再试一次";
 "Try Again Now" = "现在再试一次";
 "Try a place, a month or year, “videos”, a person, or what's in the photo (“dog on a beach”)." = "尝试一个地方、一个月或一年、“视频”、一个人或照片中的内容（“海滩上的狗”）。";
+"Turn Off App Lock" = "关闭应用锁";
 "Turn On in Settings" = "在设置中打开";
 "Ultra Wide Camera" = "超广角相机";
 "Undo" = "撤销";
 "Unhidden" = "不隐藏";
 "Unhide" = "取消隐藏";
 "Unknown date" = "日期未知";
+"Unlock" = "解锁";
 "Unlock Recently Deleted" = "解锁最近删除";
 "Unlock the Hidden album" = "解锁隐藏相册";
 "Unlock the Hidden album to unhide." = "解锁隐藏相册以取消隐藏。";
@@ -501,5 +514,14 @@
 "video" = "视频";
 "Cloud accounts" = "Cloud 账户";
 "Add Account" = "添加账户";
+"Current Password" = "当前密码";
+"New Password" = "新密码";
+"Confirm Password" = "确认密码";
+"Change Password" = "更改密码";
+"Immediately" = "立即";
+"After 1 Minute" = "1 分钟后";
+"After 5 Minutes" = "5 分钟后";
+"After 15 Minutes" = "15 分钟后";
+"After 1 Hour" = "1 小时后";
 "Settings" = "设置";
 "Search" = "搜索";

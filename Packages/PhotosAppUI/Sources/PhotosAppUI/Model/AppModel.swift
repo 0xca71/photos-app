@@ -14,6 +14,7 @@ import Observation
 public final class AppModel {
     public let accounts: AccountStore
     public let serverSettings: ServerSettings
+    public let appLock: AppLockStore
 
     public private(set) var connection: ConnectionStatus = .unknown
     public private(set) var session: LibrarySession?
@@ -32,9 +33,10 @@ public final class AppModel {
     private var versionCheckedFor: URL?
     private var resolveTask: Task<Void, Never>?
 
-    public init(accounts: AccountStore, serverSettings: ServerSettings, provider: any CloudProvider) {
+    public init(accounts: AccountStore, serverSettings: ServerSettings, provider: any CloudProvider, appLock: AppLockStore = AppLockStore()) {
         self.accounts = accounts
         self.serverSettings = serverSettings
+        self.appLock = appLock
         self.provider = provider
         selector = ServerSelector(prober: provider.prober) { @MainActor in serverSettings.addresses }
     }
@@ -223,12 +225,18 @@ public final class AppModel {
 
     /// Foreground: re-check which server to use, then sync if due.
     public func sceneBecameActive() {
+        appLock.sceneBecameActive()
         guard started else { return }
         session?.setActive(true)
         scheduleResolve(after: .zero)
     }
 
+    public func sceneBecameInactive() {
+        appLock.sceneBecameInactive()
+    }
+
     public func sceneEnteredBackground() {
+        appLock.sceneBecameInactive()
         session?.setActive(false)
         scheduleBackgroundTasks()
     }
