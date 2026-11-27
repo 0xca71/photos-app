@@ -30,7 +30,8 @@ import Testing
             let api = GalleryTimeline(server: server, token: "session-token", send: transport.send)
             let buckets = try await api.buckets(query)
             #expect(buckets == [.init(timeBucket: "2025-01-01", count: 3), .init(timeBucket: "2025-02-01", count: 1)])
-            #expect(try await api.items(bucket, query: query).isEmpty)
+            let rows = try await api.items(bucket, query: query)
+            #expect(rows.isEmpty)
             #expect(query.hasClientFilter == hasClientFilter)
             let requests = await transport.requests
             #expect(requests.map { $0.url?.path } == ["/photos/api/timeline/buckets", "/photos/api/timeline/bucket"])
@@ -85,9 +86,9 @@ import Testing
             let rows = try await api.items(bucket, query: query)
             #expect(rows.map(\.id) == ids)
             #expect(Set(await transport.paths) == detailIDs.union(["bucket"]))
-            if query.filter == .screenshots { #expect(rows.allSatisfy(\.isScreenshot)) }
-            if query.filter == .edited { #expect(rows.allSatisfy(\.isEdited)) }
-            if query.filter == .capturedByMe { #expect(rows.allSatisfy(\.hasCamera)) }
+            if query.filter == .screenshots { #expect(rows.map(\.isScreenshot) == [true]) }
+            if query.filter == .edited { #expect(rows.map(\.isEdited) == [true]) }
+            if query.filter == .capturedByMe { #expect(rows.map(\.hasCamera) == [true]) }
         }
     }
 
@@ -95,8 +96,9 @@ import Testing
         let transport = Transport(rows: [])
         let api = GalleryTimeline(server: server, token: "token", send: transport.send)
         for query in [query(.screenshots, screenshots: false), query(.sharedWithYou, shared: false)] {
-            #expect(try await api.buckets(query).isEmpty)
-            #expect(try await api.items(bucket, query: query).isEmpty)
+            let buckets = try await api.buckets(query)
+            let rows = try await api.items(bucket, query: query)
+            #expect(buckets.isEmpty && rows.isEmpty)
         }
         #expect(await transport.paths.isEmpty)
     }
