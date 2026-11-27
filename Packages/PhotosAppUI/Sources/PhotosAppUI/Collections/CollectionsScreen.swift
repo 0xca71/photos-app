@@ -6,6 +6,7 @@ import SwiftUI
 
 /// Where a collection card leads.
 enum CollectionRoute: Hashable {
+    case randomExplore
     case smart(SmartCollection)
     case album(CloudAlbum)
     case memory(CloudMemory)
@@ -38,6 +39,7 @@ struct CollectionsScreen: View {
         NavigationStack(path: $path) {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 30) {
+                    RandomExploreEntryCard()
                     ForEach(collections.visibleSections) { section in
                         sectionView(section)
                     }
@@ -288,6 +290,46 @@ struct CollectionsScreen: View {
     private func thumbhash(for assetID: String?) -> String? {
         guard let assetID else { return nil }
         return session.timeline.items.last { $0.id == assetID }?.thumbhash
+    }
+}
+
+/// A persistent entry point for the server-backed exploration page. It sits above
+/// the configurable collection sections so it remains easy to find after reordering.
+private struct RandomExploreEntryCard: View {
+    var body: some View {
+        NavigationLink(value: CollectionRoute.randomExplore) {
+            HStack(spacing: 14) {
+                Image(systemName: "shuffle")
+                    .font(.system(size: 22, weight: .bold))
+                    .frame(width: 48, height: 48)
+                    .background(.white.opacity(0.18), in: Circle())
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Random Explore")
+                        .font(.headline.weight(.bold))
+                    Text("Discover photos from your Gallery server")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.82))
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(.white.opacity(0.8))
+            }
+            .foregroundStyle(.white)
+            .padding(16)
+            .background(
+                LinearGradient(
+                    colors: [Color.indigo, Color.purple.opacity(0.85)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                in: RoundedRectangle(cornerRadius: 22, style: .continuous)
+            )
+            .shadow(color: .purple.opacity(0.22), radius: 14, y: 8)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 18)
+        .accessibilityElement(children: .combine)
     }
 }
 

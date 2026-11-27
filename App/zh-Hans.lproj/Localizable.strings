@@ -812,3 +812,25 @@
 "Years" = "年";
 "Your library is already shared with everyone on your Cloud server." = "你的资源库已与云端服务器上的所有用户共享。";
 "“%@” couldn’t be prepared for sharing: %@" = "无法准备要分享的“%@”：%@";
+
+/* Random Explore */
+"1–3 Years Ago" = "1–3 年前";
+"3–5 Years Ago" = "3–5 年前";
+"5–10 Years Ago" = "5–10 年前";
+"All Albums" = "所有相册";
+"All Dates" = "所有日期";
+"Couldn't Load Random Explore" = "无法加载随机探索";
+"Custom" = "自定义";
+"Date Range" = "日期范围";
+"Discover photos from your Gallery server" = "探索 Gallery 服务器中的照片";
+"Filters" = "筛选";
+"Gallery Album" = "Gallery 相册";
+"Last Year" = "过去一年";
+"Media Type" = "媒体类型";
+"More Than 10 Years Ago" = "10 年以前";
+"No Matching Photos or Videos" = "没有匹配的照片或视频";
+"Random Explore" = "随机探索";
+"Random Explore Filters" = "随机探索筛选";
+"Shuffle" = "洗牌";
+"This server does not support Random Explore." = "此服务器不支持随机探索。";
+"Try a different album, date range, or media type." = "请尝试其他相册、日期范围或媒体类型。";
