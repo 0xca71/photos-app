@@ -374,7 +374,7 @@ public actor LocalLibrary {
             collections.enumerateObjects { collection, _, _ in
                 let count = PHAsset.fetchAssets(in: collection, options: options).count
                 guard count > 0 else { return }
-                albums.append(PhoneAlbum(id: collection.localIdentifier, title: collection.localizedTitle ?? "Album", count: count,
+                albums.append(PhoneAlbum(id: collection.localIdentifier, title: collection.localizedTitle ?? String(localized: "Album"), count: count,
                                          isSystem: collection.assetCollectionType == .smartAlbum))
             }
         }

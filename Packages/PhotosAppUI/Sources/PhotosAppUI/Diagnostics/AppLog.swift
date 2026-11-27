@@ -274,7 +274,7 @@ private struct LogRow: View {
                         .foregroundStyle(entry.level == .fault ? .red : .orange)
                         .accessibilityLabel(entry.level == .fault ? "Fault" : "Error")
                 }
-                Text(entry.category.capitalized)
+                Text(NSLocalizedString(entry.category.capitalized, comment: "Diagnostic log category"))
                     .fontWeight(.semibold)
                 Spacer()
                 Text(entry.date.formatted(date: .abbreviated, time: .standard))

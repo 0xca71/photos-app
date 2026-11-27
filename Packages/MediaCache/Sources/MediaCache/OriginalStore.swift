@@ -33,7 +33,7 @@ public struct URLSessionFileDownloader: FileDownloader {
                         if error.code == .cancelled {
                             continuation.resume(throwing: CancellationError())
                         } else {
-                            continuation.resume(throwing: MediaError(kind: .network, message: "Downloading the original failed: \(NetworkErrorDescription.describe(error))"))
+                            continuation.resume(throwing: MediaError(kind: .network, message: String(localized: "Downloading the original failed: \(NetworkErrorDescription.describe(error))")))
                         }
                         return
                     }
@@ -42,12 +42,12 @@ public struct URLSessionFileDownloader: FileDownloader {
                         return
                     }
                     guard let location, let http = response as? HTTPURLResponse else {
-                        continuation.resume(throwing: MediaError(kind: .server, message: "The server sent an unexpected response for the original."))
+                        continuation.resume(throwing: MediaError(kind: .server, message: String(localized: "The server sent an unexpected response for the original.")))
                         return
                     }
                     guard http.statusCode == 200 else {
                         let kind: MediaError.Kind = http.statusCode == 401 ? .unauthorized : http.statusCode == 404 ? .notFound : .server
-                        continuation.resume(throwing: MediaError(kind: kind, message: "The server returned \(http.statusCode) for the original."))
+                        continuation.resume(throwing: MediaError(kind: kind, message: String(localized: "The server returned \(http.statusCode) for the original.")))
                         return
                     }
                     // The system deletes `location` when this handler returns, so move it now.

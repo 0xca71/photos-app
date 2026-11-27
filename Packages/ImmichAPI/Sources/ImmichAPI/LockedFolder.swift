@@ -49,7 +49,7 @@ extension Client {
         case .noContent:
             return
         case .undocumented(let status, _) where status == 400 || status == 401:
-            throw APIError(kind: .unauthorized, message: "The Cloud PIN was not accepted.")
+            throw APIError(kind: .unauthorized, message: String(localized: "The Cloud PIN was not accepted."))
         case .undocumented(let status, let payload):
             throw await APIError.from(statusCode: status, payload: payload, operation: "unlock the Hidden album")
         }

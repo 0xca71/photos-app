@@ -165,7 +165,7 @@ struct StatusBanner: View {
         if let warning = model.versionWarning, warning != dismissedWarning {
             banner(warning, systemImage: "exclamationmark.triangle.fill") { dismissedWarning = warning }
         } else if session.needsSignIn {
-            banner("The server no longer accepts this sign-in. Open Settings to sign in again.", systemImage: "person.crop.circle.badge.exclamationmark", onClose: nil)
+            banner(String(localized: "The server no longer accepts this sign-in. Open Settings to sign in again."), systemImage: "person.crop.circle.badge.exclamationmark", onClose: nil)
         } else if case .failed(let message, _) = session.syncStatus, !session.timeline.items.isEmpty {
             banner(message, systemImage: "exclamationmark.icloud") { session.syncNow() }
         }

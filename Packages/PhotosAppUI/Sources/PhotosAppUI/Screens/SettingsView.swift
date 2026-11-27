@@ -47,7 +47,7 @@ struct CloudServerSettingsView: View {
 /// The app's own version, as set in project.yml (MARKETING_VERSION).
 enum AppVersion {
     static var display: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? String(localized: "Unknown")
     }
 }
 
@@ -127,10 +127,10 @@ struct AppSettingsSections: View {
             case .unknown, .checking:
                 LabeledContent("Status") { ProgressView() }
             case .connected(let server):
-                LabeledContent("Status", value: server.route == .local ? "Home (local network)" : "Away (Tailscale)")
+                LabeledContent("Status", value: server.route == .local ? String(localized: "Home (local network)") : String(localized: "Away (Tailscale)"))
                 LabeledContent("Address", value: server.url.absoluteString)
             case .unreachable(let reasons):
-                LabeledContent("Status", value: "Not reachable")
+                LabeledContent("Status", value: String(localized: "Not reachable"))
                 ForEach(reasons, id: \.self) { Text($0).font(.footnote).foregroundStyle(.red) }
             }
             if let info = model.serverInfo {
@@ -147,7 +147,7 @@ struct AppSettingsSections: View {
         Section("Library Sync") {
             switch session.syncStatus {
             case .idle:
-                LabeledContent("Status", value: "Waiting for the server")
+                LabeledContent("Status", value: String(localized: "Waiting for the server"))
             case .syncing(let applied):
                 LabeledContent("Status") {
                     HStack {

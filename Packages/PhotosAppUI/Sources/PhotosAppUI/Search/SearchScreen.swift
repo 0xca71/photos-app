@@ -82,7 +82,7 @@ struct SearchScreen: View {
         .task {
             let places = await session.topPlaces(limit: 2)
             let year = Calendar.current.component(.year, from: .now)
-            suggestions = places.map { String(localized: "\($0)") } + [String(localized: "Videos in \(String(year))"), String(localized: "Favourites")]
+            suggestions = places + [String(localized: "Videos in \(String(year))"), String(localized: "Favourites")]
             people = orderedPeople((try? await session.people()) ?? [])
         }
         .task(id: text) {

@@ -46,9 +46,9 @@ public enum VersionCheck: Sendable, Equatable {
         case .supported:
             nil
         case .serverNewer(let version):
-            "The Cloud server runs version \(version). This app was built for version \(ServerVersion.generatedFrom.major), so some features may not work until the app is updated."
+            String(localized: "The Cloud server runs version \(version.description). This app was built for version \(ServerVersion.generatedFrom.major), so some features may not work until the app is updated.")
         case .serverOlder(let version):
-            "The Cloud server runs version \(version), older than \(ServerVersion.generatedFrom) which this app was built for. Update the server."
+            String(localized: "The Cloud server runs version \(version.description), older than \(ServerVersion.generatedFrom.description) which this app was built for. Update the server.")
         }
     }
 }

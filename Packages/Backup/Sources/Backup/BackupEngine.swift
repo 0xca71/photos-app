@@ -469,7 +469,7 @@ public actor BackupEngine {
             (try BackupStore.counts(ownerID: ownerID, scope: scope, in: db), try BackupStore.problems(limit: 20, in: db))
         }) {
             status.counts = counts
-            status.problems = problems.map { "\($0.fileName ?? String(localized: "A photo")): \($0.lastError ?? "")" }
+            status.problems = problems.map { String(localized: "\($0.fileName ?? String(localized: "A photo")): \($0.lastError ?? "")") }
         }
     }
 

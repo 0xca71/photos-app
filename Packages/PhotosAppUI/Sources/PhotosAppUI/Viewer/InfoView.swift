@@ -394,7 +394,9 @@ enum InfoFormatting {
             name = model
         }
         var optics: [String] = []
-        if let focal = exif.focalLength { optics.append("\(focal.formatted(.number.precision(.fractionLength(0...1)))) mm") }
+        if let focal = exif.focalLength {
+            optics.append(String(localized: "\(focal.formatted(.number.precision(.fractionLength(0...1)))) mm"))
+        }
         if let f = exif.fNumber { optics.append("ƒ\(f.formatted(.number.precision(.fractionLength(0...1))))") }
         switch (name, optics.isEmpty) {
         case (nil, true): return nil
@@ -411,7 +413,9 @@ enum InfoFormatting {
         let height = details.exif?.exifImageHeight ?? details.asset.height
         if let width, let height, width > 0, height > 0 {
             let megapixels = Double(width * height) / 1_000_000
-            if megapixels >= 1 { parts.append("\(megapixels.formatted(.number.precision(.fractionLength(0)))) MP") }
+            if megapixels >= 1 {
+                parts.append(String(localized: "\(megapixels.formatted(.number.precision(.fractionLength(0)))) MP"))
+            }
             parts.append("\(width) × \(height)")
         }
         if let size = details.exif?.fileSizeInByte { parts.append(Formatting.bytes(size)) }
@@ -424,9 +428,13 @@ enum InfoFormatting {
     static func exposureParts(_ exif: RemoteExifRecord) -> [String] {
         var parts: [String] = []
         if let iso = exif.iso { parts.append("ISO \(iso)") }
-        if let focal = exif.focalLength { parts.append("\(focal.formatted(.number.precision(.fractionLength(0...1)))) mm") }
+        if let focal = exif.focalLength {
+            parts.append(String(localized: "\(focal.formatted(.number.precision(.fractionLength(0...1)))) mm"))
+        }
         if let f = exif.fNumber { parts.append("ƒ\(f.formatted(.number.precision(.fractionLength(0...1))))") }
-        if let time = exif.exposureTime, !time.isEmpty { parts.append(time.contains("s") ? time : "\(time) s") }
+        if let time = exif.exposureTime, !time.isEmpty {
+            parts.append(time.contains("s") ? time : String(localized: "\(time) s"))
+        }
         return parts
     }
 

@@ -62,7 +62,7 @@ struct BackupView: View {
                     get: { session.backupSettings.tempBudgetBytes / (1024 * 1024 * 1024) },
                     set: { session.backupSettings.tempBudgetBytes = $0 * 1024 * 1024 * 1024 }
                 ), in: 1...20) {
-                    LabeledContent("Temporary Space", value: "\(session.backupSettings.tempBudgetBytes / (1024 * 1024 * 1024)) GB")
+                    LabeledContent("Temporary Space", value: String(localized: "\(session.backupSettings.tempBudgetBytes / (1024 * 1024 * 1024)) GB"))
                 }
             } footer: {
                 Text("Each upload is prepared as a file first. At most this much space is used at once; each file is deleted as soon as its upload finishes.")

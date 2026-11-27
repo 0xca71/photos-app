@@ -15,7 +15,7 @@ public struct PingProber: ServerProber {
             case .ok(let response):
                 let body = try response.body.json
                 guard body.res == "pong" else {
-                    return .failure(APIError(kind: .decoding, message: "answered, but not like a Cloud server."))
+                    return .failure(APIError(kind: .decoding, message: String(localized: "answered, but not like a Cloud server.")))
                 }
                 return .success(())
             case .undocumented(let status, let payload):
