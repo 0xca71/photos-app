@@ -23,7 +23,11 @@ enum SearchEngine {
     static func parse(_ text: String) -> Query {
         var query = Query()
         let monthNames = monthLookup()
-        let tokens = text.lowercased()
+        // In Chinese a year and its media type are often one word (e.g. “2026年的视频”).
+        let normalized = text.contains("年")
+            ? text.replacingOccurrences(of: #"(?<![\p{L}\p{N}])([0-9]{4})\s*年(?:\s*的)?"#, with: "$1 ", options: .regularExpression)
+            : text
+        let tokens = normalized.lowercased()
             .components(separatedBy: CharacterSet.alphanumerics.inverted)
             .filter { !$0.isEmpty }
         var index = 0
@@ -36,14 +40,16 @@ enum SearchEngine {
                 query.months.insert(month)
             } else if let season = season(token) {
                 query.months.formUnion(season)
-            } else if ["video", "videos"].contains(token) {
+            } else if ["video", "videos", "视频"].contains(token) {
                 query.videos = true
-            } else if ["photo", "photos", "picture", "pictures", "image", "images"].contains(token) {
+            } else if ["photo", "photos", "picture", "pictures", "image", "images", "照片", "图片"].contains(token) {
                 query.photos = true
-            } else if ["favourite", "favourites", "favorite", "favorites"].contains(token) {
+            } else if ["favourite", "favourites", "favorite", "favorites", "收藏", "收藏夹"].contains(token) {
                 query.favourites = true
-            } else if ["screenshot", "screenshots"].contains(token) {
+            } else if ["screenshot", "screenshots", "截屏", "截图"].contains(token) {
                 query.screenshots = true
+            } else if token == "实况照片" {
+                query.livePhotos = true
             } else if token == "live", index + 1 < tokens.count, ["photo", "photos"].contains(tokens[index + 1]) {
                 query.livePhotos = true
                 index += 1
@@ -96,11 +102,11 @@ enum SearchEngine {
     /// Northern-hemisphere seasons (India's monsoon too).
     private static func season(_ word: String) -> Set<Int>? {
         switch word {
-        case "spring": [3, 4, 5]
-        case "summer": [6, 7, 8]
-        case "autumn", "fall": [9, 10, 11]
-        case "winter": [12, 1, 2]
-        case "monsoon": [6, 7, 8, 9]
+        case "spring", "春天", "春季": [3, 4, 5]
+        case "summer", "夏天", "夏季": [6, 7, 8]
+        case "autumn", "fall", "秋天", "秋季": [9, 10, 11]
+        case "winter", "冬天", "冬季": [12, 1, 2]
+        case "monsoon", "雨季": [6, 7, 8, 9]
         default: nil
         }
     }

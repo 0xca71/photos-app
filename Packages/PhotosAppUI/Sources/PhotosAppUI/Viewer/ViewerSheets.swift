@@ -18,8 +18,11 @@ struct AlbumPickerView: View {
         NavigationStack {
             Group {
                 if let albums, albums.isEmpty {
-                    ContentUnavailableView(shared ? "No Shared Albums" : "No Albums", systemImage: "rectangle.stack",
-                                           description: Text("Use New \(shared ? "Shared " : "")Album in the menu to create one."))
+                    ContentUnavailableView(
+                        shared ? String(localized: "No Shared Albums") : String(localized: "No Albums"),
+                        systemImage: "rectangle.stack",
+                        description: shared ? Text("Use New Shared Album in the menu to create one.") : Text("Use New Album in the menu to create one.")
+                    )
                 } else if let albums {
                     List(albums) { album in
                         Button {
@@ -39,7 +42,7 @@ struct AlbumPickerView: View {
                     ProgressView()
                 }
             }
-            .navigationTitle(shared ? "Add to Shared Album" : "Add to Album")
+            .navigationTitle(shared ? String(localized: "Add to Shared Album") : String(localized: "Add to Album"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -124,12 +127,12 @@ struct NewAlbumView: View {
                     Section { Text(error).foregroundStyle(.red) }
                 }
             }
-            .navigationTitle(shared ? "New Shared Album" : "New Album")
+            .navigationTitle(shared ? String(localized: "New Shared Album") : String(localized: "New Album"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(shared ? "Create" : "Save") { create() }
+                    Button(shared ? String(localized: "Create") : String(localized: "Save")) { create() }
                         .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || working || (shared && selected.isEmpty))
                 }
             }
@@ -287,7 +290,7 @@ struct AdjustLocationView: View {
             do {
                 let response = try await MKLocalSearch(request: MKLocalSearch.Request(completion: completion)).start()
                 guard let item = response.mapItems.first else {
-                    throw CloudError(kind: .decoding, message: "That place has no coordinates.")
+                    throw CloudError(kind: .decoding, message: String(localized: "That place has no coordinates."))
                 }
                 let coordinate: CLLocationCoordinate2D
                 if #available(iOS 26.0, *) {

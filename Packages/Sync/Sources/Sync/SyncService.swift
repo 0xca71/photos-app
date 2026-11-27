@@ -32,7 +32,7 @@ public struct ClientSyncAPI: SyncAPI {
         switch output {
         case .ok(let response):
             guard case .any(let body) = response.body else {
-                throw APIError(kind: .decoding, message: "Sync: the server sent an unexpected response.")
+                throw APIError(kind: .decoding, message: String(localized: "Sync: the server sent an unexpected response."))
             }
             return body
         case .undocumented(let status, let payload):
@@ -192,7 +192,7 @@ public actor SyncService {
                     line = try decoder.decode(SyncLine.self, from: data)
                 } catch {
                     let preview = String(decoding: data.prefix(200), as: UTF8.self)
-                    throw APIError(kind: .decoding, message: "Sync: a line from the server could not be read (\(preview)).")
+                    throw APIError(kind: .decoding, message: String(localized: "Sync: a line from the server could not be read (\(preview))."))
                 }
                 if let current = run.first, current.type != line.type || run.count >= batchSize {
                     resetRequested = try await apply(run, report: &report, onProgress: onProgress) || resetRequested

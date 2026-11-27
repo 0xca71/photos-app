@@ -37,9 +37,9 @@ public enum ChecksumError: Error, LocalizedError, Equatable {
 
     public var errorDescription: String? {
         switch self {
-        case .notOnPhone: "The original is only in iCloud."
-        case .noUploadResource: "This item has no file that can be backed up."
-        case .assetGone: "The item is no longer in the photo library."
+        case .notOnPhone: String(localized: "The original is only in iCloud.")
+        case .noUploadResource: String(localized: "This item has no file that can be backed up.")
+        case .assetGone: String(localized: "The item is no longer in the photo library.")
         case .photoKit(let message): message
         }
     }

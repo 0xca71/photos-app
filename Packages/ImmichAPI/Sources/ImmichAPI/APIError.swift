@@ -19,18 +19,19 @@ extension CloudError {
     /// The same, for a response body already read (calls made outside the generated client).
     public static func from(statusCode: Int, body: Data, operation: String) -> CloudError {
         let serverMessage = (try? JSONDecoder().decode(ServerErrorBody.self, from: body))?.message?.joined
-        let detail = serverMessage.map { ": \($0)" } ?? ""
+        let detail = serverMessage.map { String(localized: ": \($0)") } ?? ""
+        var action: String { NSLocalizedString(operation, comment: "Action that failed") }
         switch statusCode {
         case 401:
-            return APIError(kind: .unauthorized, message: "The server rejected the sign-in (401)\(detail). Sign in again.")
+            return APIError(kind: .unauthorized, message: String(localized: "The server rejected the sign-in (401)\(detail). Sign in again."))
         case 403:
-            return APIError(kind: .http(status: 403), message: "Not allowed (403) for \(operation)\(detail).")
+            return APIError(kind: .http(status: 403), message: String(localized: "Not allowed (403) for \(action)\(detail)."))
         case 404:
-            return APIError(kind: .http(status: 404), message: "Not found (404) for \(operation)\(detail).")
+            return APIError(kind: .http(status: 404), message: String(localized: "Not found (404) for \(action)\(detail)."))
         case 500...:
-            return APIError(kind: .http(status: statusCode), message: "The server had an error (\(statusCode)) during \(operation)\(detail).")
+            return APIError(kind: .http(status: statusCode), message: String(localized: "The server had an error (\(statusCode)) during \(action)\(detail)."))
         default:
-            return APIError(kind: .http(status: statusCode), message: "Unexpected response \(statusCode) for \(operation)\(detail).")
+            return APIError(kind: .http(status: statusCode), message: String(localized: "Unexpected response \(statusCode) for \(action)\(detail)."))
         }
     }
 
