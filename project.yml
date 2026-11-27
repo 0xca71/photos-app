@@ -46,6 +46,8 @@ targets:
     platform: iOS
     sources:
       - App
+    resources:
+      - path: App/zh-Hans.lproj
     dependencies:
       - package: Core
       - package: ImmichCloud
