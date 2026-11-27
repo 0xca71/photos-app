@@ -181,31 +181,10 @@ private struct LibraryTimelineView: View {
         switch ui.timeScale {
         case .all:
             ZStack {
-                PhotoGridView(
-                    snapshot: snapshot, session: session, columns: $columns, ui: ui,
-                    insets: UIEdgeInsets(top: headerBottom + 6, left: 0, bottom: bottomPadding, right: 0),
-                    randomTarget: randomTarget, onBrowseEdges: serverGrid ? browseEdges : nil
-                )
+                grid(snapshot)
                 .ignoresSafeArea()
                 .opacity(snapshot.items.isEmpty ? 0 : 1)
-                if serverGrid && snapshot.items.isEmpty, let loadError {
-                    ContentUnavailableView {
-                        Label("Couldn’t Load Library", systemImage: "exclamationmark.icloud")
-                    } description: { Text(loadError) } actions: { Button("Try Again") { browse(.initial) } }
-                } else if serverGrid && !snapshot.isLoaded {
-                    if case .unreachable(let reasons) = model.connection {
-                        ContentUnavailableView("Server Not Reachable", systemImage: "wifi.exclamationmark", description: Text(reasons.joined(separator: "\n")))
-                    } else { ProgressView("Loading Your Library") }
-                } else if snapshot.isLoaded && snapshot.items.isEmpty {
-                    if ui.isFiltered {
-                        ContentUnavailableView("No Items", systemImage: "line.3.horizontal.decrease.circle",
-                                               description: Text("Nothing matches the current filter."))
-                    } else if serverGrid {
-                        ContentUnavailableView("No Photos", systemImage: "photo.on.rectangle", description: Text("Photos on your Cloud server appear here."))
-                    } else {
-                        EmptyLibraryView(session: session, connection: model.connection)
-                    }
-                }
+                if snapshot.items.isEmpty { emptyState(loaded: snapshot.isLoaded) }
             }
         case .months, .years:
             TimeScaleView(
@@ -218,6 +197,44 @@ private struct LibraryTimelineView: View {
             )
             .ignoresSafeArea()
             .background(Color(.systemBackground))
+        }
+    }
+
+    private func grid(_ snapshot: TimelineSnapshot) -> PhotoGridView {
+        var grid = PhotoGridView(snapshot: snapshot, session: session, columns: $columns, ui: ui)
+        grid.insets = UIEdgeInsets(top: headerBottom + 6, left: 0, bottom: bottomPadding, right: 0)
+        grid.randomTarget = randomTarget
+        if serverGrid {
+            grid.onBrowseEdges = { older, newer, version in
+                browseEdges(older: older, newer: newer, version: version)
+            }
+        }
+        return grid
+    }
+
+    @ViewBuilder
+    private func emptyState(loaded: Bool) -> some View {
+        if serverGrid, let loadError {
+            ContentUnavailableView {
+                Label("Couldn’t Load Library", systemImage: "exclamationmark.icloud")
+            } description: {
+                Text(loadError)
+            } actions: {
+                Button("Try Again") { browse(.initial) }
+            }
+        } else if serverGrid && !loaded {
+            if case .unreachable(let reasons) = model.connection {
+                ContentUnavailableView("Server Not Reachable", systemImage: "wifi.exclamationmark", description: Text(reasons.joined(separator: "\n")))
+            } else { ProgressView("Loading Your Library") }
+        } else if loaded {
+            if ui.isFiltered {
+                ContentUnavailableView("No Items", systemImage: "line.3.horizontal.decrease.circle",
+                                       description: Text("Nothing matches the current filter."))
+            } else if serverGrid {
+                ContentUnavailableView("No Photos", systemImage: "photo.on.rectangle", description: Text("Photos on your Cloud server appear here."))
+            } else {
+                EmptyLibraryView(session: session, connection: model.connection)
+            }
         }
     }
 }
