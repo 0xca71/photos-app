@@ -1,6 +1,7 @@
 import Core
 import CloudCore
 import MediaCache
+import Observation
 import Persistence
 import SwiftUI
 import UIKit
@@ -25,7 +26,11 @@ final class ViewerViewController: UIViewController {
     var album: AlbumContext?
 
     private(set) var items: [TimelineItem]
-    private var currentIndex: Int
+    private var currentIndex: Int {
+        didSet { if oldValue != currentIndex { prefetchExploration() } }
+    }
+    private let exploration: RandomExploreRound?
+    private let roundID: UUID?
     private let session: LibrarySession
     private let placeholder: (TimelineItem) -> UIImage?
     private let transitionController: ViewerTransitionController
@@ -36,7 +41,7 @@ final class ViewerViewController: UIViewController {
     private var collectionView: UICollectionView!
     private let backgroundView = UIView()
     private let topBar = ViewerTopBar()
-    private let bottomBar = ViewerBottomBar()
+    private lazy var bottomBar = ViewerBottomBar(readOnly: exploration != nil)
     private let videoControls = VideoControlsView()
     /// The video controls hide first whenever the viewer is leaving the video (closing, a
     /// drag down, or the info panel opening), before those animations run.
@@ -89,7 +94,9 @@ final class ViewerViewController: UIViewController {
     private var panelTop: CGFloat = .greatestFiniteMagnitude
     private var infoStop = InfoPanelGeometry.Stop.hidden
 
-    init(items: [TimelineItem], index: Int, session: LibrarySession, source: ViewerTransitionSource, mode: Mode = .library, placeholder: @escaping (TimelineItem) -> UIImage?) {
+    init(items: [TimelineItem], index: Int, session: LibrarySession, source: ViewerTransitionSource, mode: Mode = .library, exploration: RandomExploreRound? = nil, placeholder: @escaping (TimelineItem) -> UIImage?) {
+        self.exploration = exploration
+        roundID = exploration?.roundID
         self.items = items
         self.mode = mode
         currentIndex = min(max(index, 0), max(items.count - 1, 0))
@@ -100,14 +107,14 @@ final class ViewerViewController: UIViewController {
             pipeline: session.pipeline,
             originals: session.originals,
             loadsOriginalWhenSettled: { [weak session] in session?.isOnHomeNetwork ?? false },
-            phone: session.phoneImages,
+            phone: exploration == nil ? session.phoneImages : nil,
             videoStream: { [weak session] id in session?.connection?.media.videoStream(assetID: id) },
             motionPart: { [weak session] id in
                 guard let session, let motionID = session.detailsNow(for: id)?.asset.livePhotoVideoId,
                       let motion = session.detailsNow(for: motionID) else { return nil }
                 return (motionID, motion.asset.originalFileName)
             },
-            airPlayURL: { [weak session] id in
+            airPlayURL: exploration != nil ? nil : { [weak session] id in
                 guard let session else { throw CancellationError() }
                 return try await session.airPlayVideoURL(assetID: id)
             },
@@ -208,11 +215,15 @@ final class ViewerViewController: UIViewController {
         airPlayPhotos.attach(to: view)
         airPlayPhotos.onRouteChange = { [weak self] _ in self?.sendCurrentToAirPlay() }
         topBar.backButton.addTarget(self, action: #selector(close), for: .touchUpInside)
-        bottomBar.shareButton.addTarget(self, action: #selector(share), for: .touchUpInside)
-        bottomBar.favoriteButton.addTarget(self, action: #selector(toggleFavorite), for: .touchUpInside)
+        if exploration == nil {
+            bottomBar.shareButton.addTarget(self, action: #selector(share), for: .touchUpInside)
+            bottomBar.favoriteButton.addTarget(self, action: #selector(toggleFavorite), for: .touchUpInside)
+            bottomBar.editButton.addTarget(self, action: #selector(openEditor), for: .touchUpInside)
+            bottomBar.deleteButton.addTarget(self, action: #selector(confirmDelete), for: .touchUpInside)
+        } else {
+            topBar.backButton.accessibilityLabel = String(localized: "Back to Random Explore")
+        }
         bottomBar.infoButton.addTarget(self, action: #selector(toggleInfo), for: .touchUpInside)
-        bottomBar.editButton.addTarget(self, action: #selector(openEditor), for: .touchUpInside)
-        bottomBar.deleteButton.addTarget(self, action: #selector(confirmDelete), for: .touchUpInside)
         if mode == .trash {
             bottomBar.showTrashActions()
             bottomBar.purgeButton.addTarget(self, action: #selector(confirmPurge), for: .touchUpInside)
@@ -228,6 +239,42 @@ final class ViewerViewController: UIViewController {
         collectionView.panGestureRecognizer.require(toFail: verticalPan)
 
         updateChrome()
+        observeExploration()
+        prefetchExploration()
+    }
+
+    private func prefetchExploration() {
+        guard let exploration, exploration.roundID == roundID else { return }
+        exploration.prefetch(near: currentIndex)
+    }
+
+    /// UIKit presents the viewer independently of SwiftUI. Subscribe for this round only;
+    /// a shuffle must never put unrelated photos into a viewer that is still dismissing.
+    private func observeExploration() {
+        guard let exploration, exploration.roundID == roundID else { return }
+        let loadError = withObservationTracking {
+            _ = exploration.version
+            return exploration.errorMessage
+        } onChange: { [weak self] in
+            Task { @MainActor in self?.observeExploration() }
+        }
+        if let loadError {
+            banner.show(loadError, actionTitle: String(localized: "Try Again"), duration: nil) { [weak exploration] in
+                exploration?.retry()
+            }
+        }
+        let updated = exploration.items
+        guard updated.count > items.count else { return }
+        let paths = (items.count..<updated.count).map { IndexPath(item: $0, section: 0) }
+        // Tail inserts preserve the existing visible cells (and a playing video),
+        // the offset of a swipe in progress, and a filmstrip drag in progress.
+        UIView.performWithoutAnimation {
+            self.collectionView.performBatchUpdates {
+                self.items = updated
+                self.collectionView.insertItems(at: paths)
+            }
+            self.filmstrip.appendItems(updated, at: paths)
+        }
     }
 
     private var pagerFrame: CGRect {
@@ -296,7 +343,7 @@ final class ViewerViewController: UIViewController {
             currentPage?.didBecomeCurrent()
             updateVideoControls()
             sendCurrentToAirPlay()
-            if let id = currentItem?.id { SearchHistory.recordViewed(id) }
+            if exploration == nil, let id = currentItem?.id { SearchHistory.recordViewed(id) }
             setNeedsStatusBarAppearanceUpdate()
         case .dismissing:
             videoControlsSuppressed = true
@@ -479,6 +526,10 @@ final class ViewerViewController: UIViewController {
 
     /// The ··· menu: Copy · Duplicate · Hide on top, then Start Slideshow, Add To ▸ and Adjust Info ▸.
     private func moreMenu(for item: TimelineItem) -> UIMenu {
+        let slideshow = UIAction(title: String(localized: "Start Slideshow"), image: UIImage(systemName: "play.rectangle")) { [weak self] _ in
+            self?.startSlideshow()
+        }
+        if exploration != nil { return UIMenu(children: [slideshow]) }
         let copy = UIAction(title: String(localized: "Copy"), image: UIImage(systemName: "doc.on.doc")) { [weak self] _ in
             self?.copyCurrent()
         }
@@ -489,10 +540,6 @@ final class ViewerViewController: UIViewController {
             ? UIAction(title: String(localized: "Unhide"), image: UIImage(systemName: "eye")) { [weak self] _ in self?.unhideCurrent() }
             : UIAction(title: String(localized: "Hide"), image: UIImage(systemName: "eye.slash")) { [weak self] _ in self?.confirmHide() }
         let row = UIMenu(options: .displayInline, preferredElementSize: .medium, children: [copy, duplicate, hide])
-
-        let slideshow = UIAction(title: String(localized: "Start Slideshow"), image: UIImage(systemName: "play.rectangle")) { [weak self] _ in
-            self?.startSlideshow()
-        }
 
         let addTo = UIMenu(title: String(localized: "Add To"), image: UIImage(systemName: "photo.on.rectangle.angled"), children: [
             UIMenu(options: .displayInline, children: [
@@ -1050,7 +1097,7 @@ final class ViewerViewController: UIViewController {
                 page.didBecomeCurrent()
                 updateVideoControls()
                 sendCurrentToAirPlay()
-                if let id = page.item?.id { SearchHistory.recordViewed(id) }
+                if exploration == nil, let id = page.item?.id { SearchHistory.recordViewed(id) }
             } else {
                 page.didResignCurrent()
                 page.zoomView.transform = .identity
@@ -1073,7 +1120,7 @@ final class ViewerViewController: UIViewController {
 
     private func ensureInfoPanel() {
         guard infoPanel == nil, let item = currentItem else { return }
-        let model = InfoModel(assetID: item.id, thumbnail: placeholder(item), session: session)
+        let model = InfoModel(assetID: item.id, thumbnail: placeholder(item), session: session, readOnly: exploration != nil)
         let panel = InfoPanelView(model: model)
         addChild(panel.host)
         view.insertSubview(panel, belowSubview: topBar)

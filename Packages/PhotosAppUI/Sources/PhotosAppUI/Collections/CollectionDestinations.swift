@@ -15,6 +15,8 @@ struct CollectionDestinationView: View {
 
     var body: some View {
         switch route {
+        case .randomExplore:
+            RandomExploreScreen(session: session, collections: collections, round: RandomExploreRound(load: session.randomItems(_:size:)))
         case .smart(.hidden):
             HiddenAlbumScreen(session: session, shellUI: shellUI)
         case .smart(.recentlyDeleted):

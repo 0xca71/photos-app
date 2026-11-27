@@ -1,0 +1,49 @@
+name: Random Explore
+
+on:
+  pull_request:
+    paths:
+      - 'Packages/PhotosAppUI/**'
+      - 'Packages/CloudCore/**'
+      - 'Packages/ImmichAPI/**'
+      - 'Packages/ImmichCloud/**'
+      - 'Tests/PhotosAppUITests/**'
+      - 'project.yml'
+      - '.github/workflows/random-explore.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  simulator:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - name: Select iPhone simulator
+        run: |
+          device=$(xcrun simctl list devices available --json | jq -er '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
+          echo "DEVICE=$device" >> "$GITHUB_ENV"
+          xcrun simctl boot "$device"
+      - name: Test authenticated random search requests
+        run: swift test --package-path Packages/ImmichAPI --filter RandomSearchTransportTests
+      - name: Generate test host
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Test filters, round isolation and native paging
+        run: |
+          xcodebuild test -project Photos.xcodeproj -scheme Photos -destination "platform=iOS Simulator,id=$DEVICE" \
+            -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/Explore.xcresult" \
+            -only-testing:PhotosAppUITests
+      - name: Export rendered test attachments
+        if: ${{ !cancelled() }}
+        run: |
+          xcrun xcresulttool export attachments --path "$RUNNER_TEMP/Explore.xcresult" --output-path "$RUNNER_TEMP/Explore-attachments"
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: explore-simulator-attachments
+          path: ${{ runner.temp }}/Explore-attachments
+          retention-days: 7

@@ -3862,6 +3862,129 @@ public enum Operations {
             }
         }
     }
+    /// Search random assets
+    ///
+    /// Retrieve a random selection of assets based on the provided criteria.
+    ///
+    /// - Remark: HTTP `POST /search/random`.
+    /// - Remark: Generated from `#/paths//search/random/post(searchRandom)`.
+    public enum SearchRandom {
+        public static let id: Swift.String = "searchRandom"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/search/random/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.SearchRandom.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.SearchRandom.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.SearchRandom.Input.Headers
+            /// - Remark: Generated from `#/paths/search/random/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/search/random/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.RandomSearchDto)
+            }
+            public var body: Operations.SearchRandom.Input.Body
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.SearchRandom.Input.Headers = .init(),
+                body: Operations.SearchRandom.Input.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/search/random/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/search/random/POST/responses/200/content/application\/json`.
+                    case json([Components.Schemas.AssetResponseDto])
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: [Components.Schemas.AssetResponseDto] {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.SearchRandom.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.SearchRandom.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            ///
+            ///
+            /// - Remark: Generated from `#/paths//search/random/post(searchRandom)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.SearchRandom.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.SearchRandom.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// Smart asset search
     ///
     /// Perform a smart search for assets by using machine learning vectors to determine relevance.

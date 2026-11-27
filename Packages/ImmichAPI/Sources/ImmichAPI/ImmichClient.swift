@@ -30,10 +30,14 @@ public enum ImmichClient {
         session: URLSession,
         token: @escaping TokenProvider = { nil }
     ) -> Client {
+        make(server: server, transport: URLSessionTransport(configuration: .init(session: session)), token: token)
+    }
+
+    static func make(server: URL, transport: any ClientTransport, token: @escaping TokenProvider) -> Client {
         Client(
             serverURL: apiURL(for: server),
             configuration: .init(dateTranscoder: ImmichDateTranscoder()),
-            transport: URLSessionTransport(configuration: .init(session: session)),
+            transport: transport,
             middlewares: [AuthMiddleware(token: token), LoggingMiddleware()]
         )
     }

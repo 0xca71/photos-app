@@ -210,18 +210,20 @@ struct PhotoGridView: UIViewControllerRepresentable {
     /// Text centred at the bottom of each tile (Recently Deleted's days left).
     var caption: ((TimelineItem) -> TileCaption?)?
     @AppStorage(PhotosSettings.showTileStatus) private var showsStatus = true
+    var exploration: RandomExploreRound? = nil
 
     func makeUIViewController(context: Context) -> PhotoGridViewController {
-        let controller = PhotoGridViewController(pipeline: session.pipeline, columns: columns)
-        controller.phoneImages = session.phoneImages
-        controller.showsStatus = showsStatus && mode == .library
+        let exploration = exploration
+        let controller = PhotoGridViewController(pipeline: session.pipeline, columns: columns, exploration: exploration)
+        controller.phoneImages = exploration == nil ? session.phoneImages : nil
+        controller.showsStatus = showsStatus && mode == .library && exploration == nil
         controller.caption = caption
         controller.onColumnsChanged = { newValue in columns = newValue }
         let mode = mode
         let album = album
         controller.makeViewer = { [weak session] items, index, source, placeholder in
             guard let session else { return nil }
-            let viewer = ViewerViewController(items: items, index: index, session: session, source: source, mode: mode, placeholder: placeholder)
+            let viewer = ViewerViewController(items: items, index: index, session: session, source: source, mode: mode, exploration: exploration, placeholder: placeholder)
             viewer.album = album
             return viewer
         }
@@ -252,7 +254,7 @@ struct PhotoGridView: UIViewControllerRepresentable {
     func updateUIViewController(_ controller: PhotoGridViewController, context: Context) {
         controller.apply(items: snapshot.items, version: snapshot.version)
         controller.contentInsets = insets
-        controller.showsStatus = showsStatus && mode == .library
+        controller.showsStatus = showsStatus && mode == .library && exploration == nil
         if let caption { controller.caption = caption }
         guard let ui else { return }
         controller.aspectRatioGrid = ui.options.aspectRatioGrid

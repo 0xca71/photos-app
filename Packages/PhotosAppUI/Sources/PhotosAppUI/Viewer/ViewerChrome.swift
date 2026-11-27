@@ -73,10 +73,14 @@ final class ViewerBottomBar: PassthroughView {
     let favoriteButton = GlassButtonGroup.button("heart", label: String(localized: "Favourite"))
     let infoButton = GlassButtonGroup.button("info.circle", label: String(localized: "Info"))
     let editButton = GlassButtonGroup.button("slider.horizontal.3", label: String(localized: "Edit"))
-    private lazy var middle = GlassButtonGroup(buttons: [favoriteButton, infoButton, editButton])
+    private let readOnly: Bool
+    private lazy var middle = GlassButtonGroup(buttons: readOnly ? [infoButton] : [favoriteButton, infoButton, editButton])
 
-    override init(frame: CGRect) {
-        super.init(frame: frame)
+    init(readOnly: Bool) {
+        self.readOnly = readOnly
+        super.init(frame: .zero)
+        shareButton.isHidden = readOnly
+        deleteButton.isHidden = readOnly
         for view in [shareButton, middle, deleteButton] {
             addSubview(view)
         }

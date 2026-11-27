@@ -67,6 +67,7 @@ public protocol CloudConnection: Sendable {
     func removeAssets(_ assetIDs: [String], fromAlbum albumID: String) async throws -> (removed: [String], refused: Int)
     func memories() async throws -> [CloudMemory]
     func search(_ query: CloudSearchQuery, limit: Int) async throws -> [CloudAsset]
+    func randomItems(_ query: CloudRandomQuery, size: Int) async throws -> [CloudAsset]
     func createSharedLink(assetIDs: [String], expiresAt: Date?) async throws -> CloudSharedLink
     func deleteSharedLink(id: String) async throws
     /// A URL anyone can stream one video from until `expiresAt` (AirPlay receivers fetch

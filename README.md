@@ -81,6 +81,7 @@ Photos and personal details are blurred.
 
 **Collections and Search**
 - Memories, Pinned, Albums, Shared Albums, Media Types, Utilities: Hidden and Recently Deleted (Face ID), Captured by Me, Archive.
+- **Random Explore:** browse a read-only sample from your Gallery server. Combine a server album, capture dates and media type; **Shuffle** draws again with the same filters. The grid and native viewer continue the same round as you browse, without waiting for Library sync.
 - Map of geotagged photos.
 - Reorder and collapse sections; three layouts.
 - Recently Deleted: days left on each item, select to recover or delete for good.
@@ -187,7 +188,7 @@ A free developer account (Personal Team) works. Free profiles last 7 days, so ru
 
 **First launch**
 1. Sign in with your server account, or with **Sign In with Single Sign-On** when the server uses OAuth. Enter the server with `https://` if it is reached by a public name.
-2. Allow **Full** Photos access, so the iPhone's photos join the Library.
+2. For server-only browsing, leave Photos access and backup off. To include the iPhone’s photos, choose **Show Photos on This iPhone** in Cloud Server Settings › This iPhone.
 
 **Back up**
 1. Open your account picture (Collections, top right) › **Back Up This iPhone** and turn it on. Optional: choose albums (**Back Up From**), mobile data, charging only.

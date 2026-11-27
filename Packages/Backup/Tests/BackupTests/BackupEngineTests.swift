@@ -107,6 +107,7 @@ private final class FakeConnection: CloudConnection, @unchecked Sendable {
     func stopSharingLibrary(with userID: String) async throws { throw unused() }
     func showSharedLibraryInLibrary(_ shown: Bool, partnerID: String) async throws { throw unused() }
     func search(_ query: CloudSearchQuery, limit: Int) async throws -> [CloudAsset] { throw unused() }
+    func randomItems(_ query: CloudRandomQuery, size: Int) async throws -> [CloudAsset] { throw unused() }
     func createSharedLink(assetIDs: [String], expiresAt: Date?) async throws -> CloudSharedLink { throw unused() }
     func deleteSharedLink(id: String) async throws { throw unused() }
     func temporaryPublicVideoURL(assetID: String, expiresAt: Date) async throws -> CloudSharedLink { throw unused() }

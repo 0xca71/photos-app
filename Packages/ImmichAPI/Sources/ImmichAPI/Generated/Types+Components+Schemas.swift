@@ -2942,6 +2942,301 @@ extension Components {
                 case pinCode
             }
         }
+        /// - Remark: Generated from `#/components/schemas/RandomSearchDto`.
+        public struct RandomSearchDto: Codable, Hashable, Sendable {
+            /// Filter by album IDs
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/albumIds`.
+            @available(*, deprecated)
+            public var albumIds: [Swift.String]?
+            /// Filter by city name
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/city`.
+            @available(*, deprecated)
+            public var city: Swift.String?
+            /// Filter by country name
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/country`.
+            @available(*, deprecated)
+            public var country: Swift.String?
+            /// Filter by creation date (after)
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/createdAfter`.
+            @available(*, deprecated)
+            public var createdAfter: Foundation.Date?
+            /// Filter by creation date (before)
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/createdBefore`.
+            @available(*, deprecated)
+            public var createdBefore: Foundation.Date?
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/filter`.
+            public var filter: Components.Schemas.SearchFilter?
+            /// Filter by encoded status
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/isEncoded`.
+            @available(*, deprecated)
+            public var isEncoded: Swift.Bool?
+            /// Filter by favorite status
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/isFavorite`.
+            @available(*, deprecated)
+            public var isFavorite: Swift.Bool?
+            /// Filter by motion photo status
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/isMotion`.
+            @available(*, deprecated)
+            public var isMotion: Swift.Bool?
+            /// Filter assets not in any album
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/isNotInAlbum`.
+            @available(*, deprecated)
+            public var isNotInAlbum: Swift.Bool?
+            /// Filter by offline status
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/isOffline`.
+            @available(*, deprecated)
+            public var isOffline: Swift.Bool?
+            /// Filter by lens model
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/lensModel`.
+            @available(*, deprecated)
+            public var lensModel: Swift.String?
+            /// Library ID to filter by
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/libraryId`.
+            @available(*, deprecated)
+            public var libraryId: Swift.String?
+            /// Filter by camera make
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/make`.
+            @available(*, deprecated)
+            public var make: Swift.String?
+            /// Filter by camera model
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/model`.
+            @available(*, deprecated)
+            public var model: Swift.String?
+            /// Filter by OCR text content
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/ocr`.
+            @available(*, deprecated)
+            public var ocr: Swift.String?
+            /// Filter by person IDs
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/personIds`.
+            @available(*, deprecated)
+            public var personIds: [Swift.String]?
+            /// Filter by rating [1-5], or null for unrated
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/rating`.
+            @available(*, deprecated)
+            public var rating: Swift.Int?
+            /// Number of results to return
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/size`.
+            public var size: Swift.Int?
+            /// Filter by state/province name
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/state`.
+            @available(*, deprecated)
+            public var state: Swift.String?
+            /// Filter by tag IDs
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/tagIds`.
+            @available(*, deprecated)
+            public var tagIds: [Swift.String]?
+            /// Filter by taken date (after)
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/takenAfter`.
+            @available(*, deprecated)
+            public var takenAfter: Foundation.Date?
+            /// Filter by taken date (before)
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/takenBefore`.
+            @available(*, deprecated)
+            public var takenBefore: Foundation.Date?
+            /// Filter by trash date (after)
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/trashedAfter`.
+            @available(*, deprecated)
+            public var trashedAfter: Foundation.Date?
+            /// Filter by trash date (before)
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/trashedBefore`.
+            @available(*, deprecated)
+            public var trashedBefore: Foundation.Date?
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/type`.
+            public var _type: Components.Schemas.AssetTypeEnum?
+            /// Filter by update date (after)
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/updatedAfter`.
+            @available(*, deprecated)
+            public var updatedAfter: Foundation.Date?
+            /// Filter by update date (before)
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/updatedBefore`.
+            @available(*, deprecated)
+            public var updatedBefore: Foundation.Date?
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/visibility`.
+            public var visibility: Components.Schemas.AssetVisibility?
+            /// Include deleted assets
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/withDeleted`.
+            @available(*, deprecated)
+            public var withDeleted: Swift.Bool?
+            /// Include EXIF data in response
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/withExif`.
+            public var withExif: Swift.Bool?
+            /// Include people data in response
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/withPeople`.
+            public var withPeople: Swift.Bool?
+            /// Include stacked assets
+            ///
+            /// - Remark: Generated from `#/components/schemas/RandomSearchDto/withStacked`.
+            public var withStacked: Swift.Bool?
+            /// Creates a new `RandomSearchDto`.
+            ///
+            /// - Parameters:
+            ///   - albumIds: Filter by album IDs
+            ///   - city: Filter by city name
+            ///   - country: Filter by country name
+            ///   - createdAfter: Filter by creation date (after)
+            ///   - createdBefore: Filter by creation date (before)
+            ///   - filter:
+            ///   - isEncoded: Filter by encoded status
+            ///   - isFavorite: Filter by favorite status
+            ///   - isMotion: Filter by motion photo status
+            ///   - isNotInAlbum: Filter assets not in any album
+            ///   - isOffline: Filter by offline status
+            ///   - lensModel: Filter by lens model
+            ///   - libraryId: Library ID to filter by
+            ///   - make: Filter by camera make
+            ///   - model: Filter by camera model
+            ///   - ocr: Filter by OCR text content
+            ///   - personIds: Filter by person IDs
+            ///   - rating: Filter by rating [1-5], or null for unrated
+            ///   - size: Number of results to return
+            ///   - state: Filter by state/province name
+            ///   - tagIds: Filter by tag IDs
+            ///   - takenAfter: Filter by taken date (after)
+            ///   - takenBefore: Filter by taken date (before)
+            ///   - trashedAfter: Filter by trash date (after)
+            ///   - trashedBefore: Filter by trash date (before)
+            ///   - _type:
+            ///   - updatedAfter: Filter by update date (after)
+            ///   - updatedBefore: Filter by update date (before)
+            ///   - visibility:
+            ///   - withDeleted: Include deleted assets
+            ///   - withExif: Include EXIF data in response
+            ///   - withPeople: Include people data in response
+            ///   - withStacked: Include stacked assets
+            public init(
+                albumIds: [Swift.String]? = nil,
+                city: Swift.String? = nil,
+                country: Swift.String? = nil,
+                createdAfter: Foundation.Date? = nil,
+                createdBefore: Foundation.Date? = nil,
+                filter: Components.Schemas.SearchFilter? = nil,
+                isEncoded: Swift.Bool? = nil,
+                isFavorite: Swift.Bool? = nil,
+                isMotion: Swift.Bool? = nil,
+                isNotInAlbum: Swift.Bool? = nil,
+                isOffline: Swift.Bool? = nil,
+                lensModel: Swift.String? = nil,
+                libraryId: Swift.String? = nil,
+                make: Swift.String? = nil,
+                model: Swift.String? = nil,
+                ocr: Swift.String? = nil,
+                personIds: [Swift.String]? = nil,
+                rating: Swift.Int? = nil,
+                size: Swift.Int? = nil,
+                state: Swift.String? = nil,
+                tagIds: [Swift.String]? = nil,
+                takenAfter: Foundation.Date? = nil,
+                takenBefore: Foundation.Date? = nil,
+                trashedAfter: Foundation.Date? = nil,
+                trashedBefore: Foundation.Date? = nil,
+                _type: Components.Schemas.AssetTypeEnum? = nil,
+                updatedAfter: Foundation.Date? = nil,
+                updatedBefore: Foundation.Date? = nil,
+                visibility: Components.Schemas.AssetVisibility? = nil,
+                withDeleted: Swift.Bool? = nil,
+                withExif: Swift.Bool? = nil,
+                withPeople: Swift.Bool? = nil,
+                withStacked: Swift.Bool? = nil
+            ) {
+                self.albumIds = albumIds
+                self.city = city
+                self.country = country
+                self.createdAfter = createdAfter
+                self.createdBefore = createdBefore
+                self.filter = filter
+                self.isEncoded = isEncoded
+                self.isFavorite = isFavorite
+                self.isMotion = isMotion
+                self.isNotInAlbum = isNotInAlbum
+                self.isOffline = isOffline
+                self.lensModel = lensModel
+                self.libraryId = libraryId
+                self.make = make
+                self.model = model
+                self.ocr = ocr
+                self.personIds = personIds
+                self.rating = rating
+                self.size = size
+                self.state = state
+                self.tagIds = tagIds
+                self.takenAfter = takenAfter
+                self.takenBefore = takenBefore
+                self.trashedAfter = trashedAfter
+                self.trashedBefore = trashedBefore
+                self._type = _type
+                self.updatedAfter = updatedAfter
+                self.updatedBefore = updatedBefore
+                self.visibility = visibility
+                self.withDeleted = withDeleted
+                self.withExif = withExif
+                self.withPeople = withPeople
+                self.withStacked = withStacked
+            }
+            public enum CodingKeys: String, CodingKey {
+                case albumIds
+                case city
+                case country
+                case createdAfter
+                case createdBefore
+                case filter
+                case isEncoded
+                case isFavorite
+                case isMotion
+                case isNotInAlbum
+                case isOffline
+                case lensModel
+                case libraryId
+                case make
+                case model
+                case ocr
+                case personIds
+                case rating
+                case size
+                case state
+                case tagIds
+                case takenAfter
+                case takenBefore
+                case trashedAfter
+                case trashedBefore
+                case _type = "type"
+                case updatedAfter
+                case updatedBefore
+                case visibility
+                case withDeleted
+                case withExif
+                case withPeople
+                case withStacked
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/SearchAlbumResponseDto`.
         public struct SearchAlbumResponseDto: Codable, Hashable, Sendable {
             /// Number of albums in this page

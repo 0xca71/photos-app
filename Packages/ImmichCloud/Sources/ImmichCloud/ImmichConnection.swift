@@ -100,6 +100,7 @@ struct ImmichConnection: CloudConnection {
         try await client.setPartnerInTimeline(shown, partnerID: partnerID)
     }
     func search(_ query: CloudSearchQuery, limit: Int) async throws -> [CloudAsset] { try await client.searchAssets(query, limit: limit) }
+    func randomItems(_ query: CloudRandomQuery, size: Int) async throws -> [CloudAsset] { try await client.randomItems(query, size: size) }
 
     func createSharedLink(assetIDs: [String], expiresAt: Date?) async throws -> CloudSharedLink {
         let link = try await client.createSharedLink(assetIDs: assetIDs, expiresAt: expiresAt)

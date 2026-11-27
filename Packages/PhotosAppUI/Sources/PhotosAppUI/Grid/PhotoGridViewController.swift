@@ -62,6 +62,9 @@ final class PhotoGridViewController: UIViewController {
     var makeShare: ((_ items: [TimelineItem], _ index: Int, _ selection: [String], _ origin: (frame: CGRect, image: UIImage?)?, _ placeholder: @escaping (TimelineItem) -> UIImage?) -> UIViewController?)?
 
     private let pipeline: RemoteImagePipeline
+    private let exploration: RandomExploreRound?
+    private let roundID: UUID?
+    private var lastExploredIndex: Int?
     private var items: [TimelineItem] = []
     private var version = -1
     private(set) var columns: Int
@@ -114,7 +117,9 @@ final class PhotoGridViewController: UIViewController {
     private let levelHaptics = UISelectionFeedbackGenerator()
     private let limitHaptics = UIImpactFeedbackGenerator(style: .light)
 
-    init(pipeline: RemoteImagePipeline, columns: Int) {
+    init(pipeline: RemoteImagePipeline, columns: Int, exploration: RandomExploreRound? = nil) {
+        self.exploration = exploration
+        roundID = exploration?.roundID
         self.pipeline = pipeline
         self.columns = GridLevels.columns.contains(columns) ? columns : 5
         super.init(nibName: nil, bundle: nil)
@@ -140,11 +145,12 @@ final class PhotoGridViewController: UIViewController {
         collectionView.dataSource = self
         collectionView.prefetchDataSource = self
         collectionView.delegate = self
-        collectionView.accessibilityLabel = String(localized: "Library")
+        collectionView.accessibilityLabel = exploration == nil ? String(localized: "Library") : String(localized: "Random Explore")
         view.addSubview(collectionView)
         gridLayout.setAspectRatios(items.map(\.aspectRatio))
 
         scrubber.translatesAutoresizingMaskIntoConstraints = false
+        scrubber.isHidden = exploration != nil // Random order has no date axis.
         view.addSubview(scrubber)
         scrubberTop = scrubber.topAnchor.constraint(equalTo: view.topAnchor, constant: 120)
         scrubberBottom = scrubber.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -110)
@@ -171,6 +177,7 @@ final class PhotoGridViewController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         registerWithTabBar()
+        prefetchVisibleExplorationItems()
     }
 
     /// iOS 26's tab bar shrinks while the tab's main scroll view scrolls (and fades its
@@ -198,7 +205,7 @@ final class PhotoGridViewController: UIViewController {
         collectionView.verticalScrollIndicatorInsets = collectionView.contentInset
         scrubberTop?.constant = contentInsets.top + 4
         scrubberBottom?.constant = -contentInsets.bottom - 4
-        if wasAtBottom, didInitialScroll { scrollToBottom() }
+        if wasAtBottom, didInitialScroll, exploration == nil { scrollToBottom() }
     }
 
     /// Select mode › Share: opens the share screen at the first selected item, which
@@ -270,7 +277,7 @@ final class PhotoGridViewController: UIViewController {
             collectionView.layoutIfNeeded()
             if collectionView.contentSize.height > 0 {
                 didInitialScroll = true
-                scrollToBottom()
+                scrollToStart()
                 if onScrollInfo != nil {
                     LaunchTiming.firstGridShown(items: items.count)
                     LaunchTiming.checkPosition { [weak self] in self?.isNearBottom ?? false }
@@ -295,7 +302,7 @@ final class PhotoGridViewController: UIViewController {
     /// Replaces the items, keeping whatever is on screen in place (new photos arrive
     /// at the bottom; older ones synced later arrive above).
     func apply(items newItems: [TimelineItem], version newVersion: Int) {
-        guard newVersion != version else { return }
+        guard exploration?.roundID == roundID, newVersion != version else { return }
         defer { DispatchQueue.main.async { self.runShareSelfTestIfNeeded() } }
         if isZooming {
             deferredItems = (newItems, newVersion)
@@ -321,10 +328,10 @@ final class PhotoGridViewController: UIViewController {
         collectionView.layoutIfNeeded()
         if !didInitialScroll, onScrollInfo != nil { LaunchTiming.mark("laidOut") }
 
-        if !didInitialScroll || wasAtBottom {
+        if !didInitialScroll || (wasAtBottom && exploration == nil) {
             if !items.isEmpty, collectionView.bounds.height > 0 {
                 didInitialScroll = true
-                scrollToBottom()
+                scrollToStart()
                 if onScrollInfo != nil {
                     LaunchTiming.mark("scrolled")
                     collectionView.layoutIfNeeded()
@@ -342,6 +349,27 @@ final class PhotoGridViewController: UIViewController {
         let insets = collectionView.adjustedContentInset
         let maxOffset = collectionView.contentSize.height - collectionView.bounds.height + insets.bottom
         return collectionView.contentOffset.y >= maxOffset - max(gridLayout.itemSide, 44)
+    }
+
+    private func scrollToStart() {
+        if exploration == nil {
+            scrollToBottom()
+        } else {
+            collectionView.setContentOffset(CGPoint(x: 0, y: -collectionView.adjustedContentInset.top), animated: false)
+        }
+    }
+
+    /// Only appearance or a user scroll drives the feed. A grid re-layout after an
+    /// append must not keep requesting batches while the user stays in place.
+    private func prefetchVisibleExplorationItems() {
+        guard let exploration, exploration.roundID == roundID, !items.isEmpty else { return }
+        let visible = gridLayout.metrics.indexRange(
+            minY: collectionView.contentOffset.y + contentInsets.top,
+            maxY: collectionView.bounds.maxY - contentInsets.bottom
+        )
+        guard let index = visible.last, index != lastExploredIndex else { return }
+        lastExploredIndex = index
+        exploration.prefetch(near: index)
     }
 
     private func scrollToBottom() {
@@ -396,7 +424,7 @@ final class PhotoGridViewController: UIViewController {
 
     /// Tells the Library header what's on screen (only when something changed).
     private func reportScroll(userScrolled: Bool = false) {
-        guard isViewLoaded, collectionView.bounds.height > 0 else { return }
+        guard exploration == nil, isViewLoaded, collectionView.bounds.height > 0 else { return }
         let offset = collectionView.contentOffset.y
         let visible = gridLayout.metrics.indexRange(
             minY: offset + contentInsets.top,
@@ -723,6 +751,7 @@ extension PhotoGridViewController: UICollectionViewDataSource, UICollectionViewD
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         collectionView.deselectItem(at: indexPath, animated: false)
+        guard exploration?.roundID == roundID else { return }
         guard indexPath.item < items.count, !isZooming, let presenter = presenterForViewer() else { return }
         if isSelecting {
             let id = items[indexPath.item].id
@@ -806,6 +835,7 @@ extension PhotoGridViewController: UICollectionViewDataSource, UICollectionViewD
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         reportScroll(userScrolled: scrollView.isDragging)
         guard scrollView.isDragging || scrollView.isDecelerating || scrubber.isDragging else { return }
+        prefetchVisibleExplorationItems()
         scrubber.scrollPositionChanged(fraction: scrollFraction)
     }
 }
@@ -816,7 +846,7 @@ extension PhotoGridViewController: ViewerTransitionSource {
     func transitionTile(for itemID: String, scrollIntoView: Bool) -> (frame: CGRect, image: UIImage?)? {
         guard let index = items.firstIndex(where: { $0.id == itemID }) else { return nil }
         let indexPath = IndexPath(item: index, section: 0)
-        if scrollIntoView {
+        if scrollIntoView, exploration == nil {
             let frame = gridLayout.frame(forItemAt: index)
             let visible = collectionView.bounds.inset(by: collectionView.adjustedContentInset)
             if !visible.contains(frame) {

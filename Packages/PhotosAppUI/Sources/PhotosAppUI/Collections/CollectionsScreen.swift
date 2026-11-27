@@ -6,6 +6,7 @@ import SwiftUI
 
 /// Where a collection card leads.
 enum CollectionRoute: Hashable {
+    case randomExplore
     case smart(SmartCollection)
     case album(CloudAlbum)
     case memory(CloudMemory)
@@ -38,6 +39,18 @@ struct CollectionsScreen: View {
         NavigationStack(path: $path) {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 30) {
+                    NavigationLink(value: CollectionRoute.randomExplore) {
+                        HStack {
+                            Label("Random Explore", systemImage: "shuffle")
+                                .font(.headline)
+                            Spacer()
+                            Image(systemName: "chevron.right").foregroundStyle(.secondary)
+                        }
+                        .padding()
+                        .background(.quaternary, in: RoundedRectangle(cornerRadius: 16))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 20)
                     ForEach(collections.visibleSections) { section in
                         sectionView(section)
                     }
