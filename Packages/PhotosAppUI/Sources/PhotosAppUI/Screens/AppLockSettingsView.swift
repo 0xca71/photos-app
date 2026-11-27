@@ -125,7 +125,7 @@ private struct AppLockPasswordSheet: View {
         } catch AppLockError.invalidPassword {
             error = String(localized: "The password must be 4 or 6 digits.")
         } catch {
-            error = String(localized: "Couldn’t Complete")
+            self.error = String(localized: "Couldn’t Complete")
         }
     }
 
