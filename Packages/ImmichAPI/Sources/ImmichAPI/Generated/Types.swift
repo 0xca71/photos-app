@@ -217,6 +217,13 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `POST /search/metadata`.
     /// - Remark: Generated from `#/paths//search/metadata/post(searchAssets)`.
     func searchAssets(_ input: Operations.SearchAssets.Input) async throws -> Operations.SearchAssets.Output
+    /// Search random assets
+    ///
+    /// Retrieve a random selection of assets based on the provided criteria.
+    ///
+    /// - Remark: HTTP `POST /search/random`.
+    /// - Remark: Generated from `#/paths//search/random/post(searchRandom)`.
+    func searchRandom(_ input: Operations.SearchRandom.Input) async throws -> Operations.SearchRandom.Output
     /// Smart asset search
     ///
     /// Perform a smart search for assets by using machine learning vectors to determine relevance.
@@ -757,6 +764,21 @@ extension APIProtocol {
     ) async throws -> Operations.SearchAssets.Output {
         try await searchAssets(Operations.SearchAssets.Input(
             query: query,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Search random assets
+    ///
+    /// Retrieve a random selection of assets based on the provided criteria.
+    ///
+    /// - Remark: HTTP `POST /search/random`.
+    /// - Remark: Generated from `#/paths//search/random/post(searchRandom)`.
+    public func searchRandom(
+        headers: Operations.SearchRandom.Input.Headers = .init(),
+        body: Operations.SearchRandom.Input.Body
+    ) async throws -> Operations.SearchRandom.Output {
+        try await searchRandom(Operations.SearchRandom.Input(
             headers: headers,
             body: body
         ))

@@ -80,6 +80,10 @@ extension LibrarySession {
         try await connected().memories()
     }
 
+    func randomItems(_ query: CloudRandomQuery, size: Int) async throws -> [TimelineItem] {
+        try await connected().randomItems(query, size: size).map(TimelineItem.init)
+    }
+
     /// An album's photos, oldest first like the Library grid.
     func albumItems(_ albumID: String) async throws -> [TimelineItem] {
         var query = CloudSearchQuery()

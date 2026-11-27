@@ -25,12 +25,6 @@ struct PhotosShell: View {
             }
         }
         .environment(\.phoneImages, model.session?.phoneImages)
-        .task(id: model.session?.account.userID) {
-            // First launch with the phone library: ask for Photos access (iOS shows its prompt once).
-            if let session = model.session, session.photoAccess == .notDetermined {
-                await session.requestPhotoAccess()
-            }
-        }
         .sheet(item: $ui.pendingSheet) { sheet in
             if let session = model.session {
                 selectionSheet(sheet, session: session)
@@ -56,6 +50,7 @@ struct PhotosShell: View {
             }
             Tab("Collections", systemImage: "rectangle.stack.fill", value: AppSection.collections) {
                 CollectionsScreen(model: model, session: session, ui: ui)
+                    .id(ObjectIdentifier(session))
                     .overlay(alignment: .bottom) { toast.padding(.bottom, 12) }
             }
             Tab(value: AppSection.search, role: .search) {

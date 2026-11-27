@@ -63,6 +63,25 @@ extension Client {
         }
     }
 
+    /// One independent draw; the server returns a bare asset array in random order.
+    public func randomItems(_ query: CloudRandomQuery, size: Int) async throws -> [RemoteAssetSummary] {
+        let dto = Components.Schemas.RandomSearchDto(
+            albumIds: query.albumID.map { [$0] }, size: size,
+            takenAfter: query.takenAfter, takenBefore: query.takenBefore,
+            _type: query.isVideo.map { $0 ? .video : .image }
+        )
+        do {
+            switch try await searchRandom(body: .json(dto)) {
+            case .ok(let response):
+                return try response.body.json.map(RemoteAssetSummary.init)
+            case .undocumented(let status, let payload):
+                throw await APIError.from(statusCode: status, payload: payload, operation: "search")
+            }
+        } catch {
+            throw APIError.wrap(error, operation: "Search")
+        }
+    }
+
     /// The account's memories (Immich's "On This Day"), newest first.
     public func memories() async throws -> [MemorySummary] {
         do {

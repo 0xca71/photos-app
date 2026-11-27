@@ -114,6 +114,21 @@ public struct CloudSearchQuery: Sendable, Hashable {
     public init() {}
 }
 
+/// Filters for one random draw from the server. Both capture-date bounds are inclusive.
+public struct CloudRandomQuery: Sendable, Equatable {
+    public var albumID: String?
+    public var isVideo: Bool?
+    public var takenAfter: Date?
+    public var takenBefore: Date?
+
+    public init(albumID: String? = nil, isVideo: Bool? = nil, takenAfter: Date? = nil, takenBefore: Date? = nil) {
+        self.albumID = albumID
+        self.isVideo = isVideo
+        self.takenAfter = takenAfter
+        self.takenBefore = takenBefore
+    }
+}
+
 /// Someone recognised in photos by the server's face recognition (machine learning).
 public struct CloudPerson: Sendable, Hashable, Identifiable {
     public let id: String

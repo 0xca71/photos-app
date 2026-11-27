@@ -46,7 +46,7 @@ final class UndoBanner: UIView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
-    func show(_ message: String, actionTitle: String? = nil, duration: TimeInterval = 5, action: (() -> Void)? = nil) {
+    func show(_ message: String, actionTitle: String? = nil, duration: TimeInterval? = 5, action: (() -> Void)? = nil) {
         label.text = message
         button.setTitle(actionTitle, for: .normal)
         button.isHidden = actionTitle == nil
@@ -56,6 +56,7 @@ final class UndoBanner: UIView {
         UIAccessibility.post(notification: .announcement, argument: message)
 
         hideWork?.cancel()
+        guard let duration else { return }
         let work = DispatchWorkItem { [weak self] in self?.hide() }
         hideWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + duration, execute: work)

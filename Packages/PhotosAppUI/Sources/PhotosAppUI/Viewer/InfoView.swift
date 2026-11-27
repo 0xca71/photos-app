@@ -22,10 +22,12 @@ final class InfoModel {
     var caption = ""
     private(set) var captionError: String?
     let session: LibrarySession
+    let readOnly: Bool
     private var loadTask: Task<Void, Never>?
     private var peopleTask: Task<Void, Never>?
 
-    init(assetID: String, thumbnail: UIImage?, session: LibrarySession) {
+    init(assetID: String, thumbnail: UIImage?, session: LibrarySession, readOnly: Bool) {
+        self.readOnly = readOnly
         self.assetID = assetID
         self.thumbnail = thumbnail
         self.session = session
@@ -95,7 +97,11 @@ struct InfoView: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            captionField
+            if model.readOnly {
+                if !model.caption.isEmpty { Text(model.caption).frame(maxWidth: .infinity, alignment: .leading) }
+            } else {
+                captionField
+            }
             if !model.people.isEmpty {
                 peopleRow
             }
@@ -129,6 +135,7 @@ struct InfoView: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    .disabled(model.readOnly) // PersonScreen can edit people and open library grids.
                 }
             }
             .padding(.horizontal, 4)

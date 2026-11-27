@@ -18,8 +18,8 @@ struct ViewerMedia {
     let videoStream: (String) -> (url: URL, headers: [String: String])?
     /// A Cloud Live Photo's motion part (its asset id and file name).
     let motionPart: (String) -> (id: String, fileName: String)?
-    /// A URL an AirPlay receiver can open for a Cloud video (it can't send the app's sign-in).
-    let airPlayURL: (String) async throws -> URL
+    /// Browsing read-only never creates a public link on the server.
+    let airPlayURL: ((String) async throws -> URL)?
     /// Called when a video page goes away (temporary AirPlay links are deleted).
     let releaseAirPlay: () -> Void
 }
@@ -544,10 +544,10 @@ final class ViewerPageCell: UICollectionViewCell {
                 // On AirPlay the TV fetches the video itself, without the app's sign-in.
                 let id = item.id
                 playback.onExternalPlaybackChange = { [weak playback] active in
-                    guard active, let playback else { return }
+                    guard active, let playback, let airPlayURL = media.airPlayURL else { return }
                     Task { @MainActor in
                         do {
-                            let url = try await media.airPlayURL(id)
+                            let url = try await airPlayURL(id)
                             playback.switchSource(to: url)
                             Log.media.info("AirPlay: switched \(id, privacy: .public) to a URL the receiver can open")
                         } catch {
@@ -562,7 +562,7 @@ final class ViewerPageCell: UICollectionViewCell {
     }
 
     func stopVideo() {
-        if video?.isExternal == true { media?.releaseAirPlay() }
+        if video?.isExternal == true, media?.airPlayURL != nil { media?.releaseAirPlay() }
         video?.tearDown()
         video = nil
         playerView?.removeFromSuperview()

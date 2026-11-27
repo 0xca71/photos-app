@@ -54,6 +54,7 @@ filter:
     - searchUsers
     - searchMemories
     - searchAssets
+    - searchRandom
     - getSearchSuggestions
     # Server settings (trash retention), people and smart search (machine learning)
     - getServerConfig

@@ -812,3 +812,25 @@
 "Years" = "年";
 "Your library is already shared with everyone on your Cloud server." = "你的资源库已与云端服务器上的所有用户共享。";
 "“%@” couldn’t be prepared for sharing: %@" = "无法准备要分享的“%@”：%@";
+
+/* Collections › Random Explore */
+"Random Explore" = "随机探索";
+"Back to Random Explore" = "返回随机探索";
+"Shuffle" = "洗牌";
+"Gallery Album" = "Gallery 相册";
+"All Albums" = "全部相册";
+"Media Type" = "媒体类型";
+"Capture Date" = "拍摄日期";
+"Date Range" = "日期范围";
+"All Dates" = "不限日期";
+"Past Year" = "最近一年";
+"1–3 Years Ago" = "1 至 3 年前";
+"3–5 Years Ago" = "3 至 5 年前";
+"5–10 Years Ago" = "5 至 10 年前";
+"More Than 10 Years Ago" = "10 年前及更早";
+"Custom Range" = "自定义范围";
+"Start Date" = "起始日期";
+"End Date" = "结束日期";
+"Apply Filters" = "应用筛选";
+"No Matching Photos or Videos" = "没有符合条件的照片或视频";
+"Try a different album, date range, or media type." = "试试其他相册、日期范围或媒体类型。";

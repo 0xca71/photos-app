@@ -124,6 +124,15 @@ targets:
             $BUDDY -c "Add :NSAppTransportSecurity:NSExceptionDomains:$HOST dict" "$PLIST" 2>/dev/null || true
             $BUDDY -c "Add :NSAppTransportSecurity:NSExceptionDomains:$HOST:NSExceptionAllowsInsecureHTTPLoads bool true" "$PLIST" 2>/dev/null || true
           done
+  PhotosAppUITests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests/PhotosAppUITests]
+    dependencies:
+      - target: Photos
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
 schemes:
   Photos:
     build:
@@ -131,3 +140,5 @@ schemes:
         Photos: all
     run:
       config: Debug
+    test:
+      targets: [PhotosAppUITests]

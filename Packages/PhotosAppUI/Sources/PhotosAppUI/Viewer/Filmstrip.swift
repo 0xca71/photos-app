@@ -59,6 +59,15 @@ final class FilmstripView: UIView {
         centerCurrent(animated: false)
     }
 
+    /// The pager's append transaction: don't reload, re-center or end user scrubbing.
+    func appendItems(_ updated: [TimelineItem], at paths: [IndexPath]) {
+        collectionView.performBatchUpdates {
+            self.layout.aspectRatios.append(contentsOf: updated[self.items.count...].lazy.map(\.aspectRatio))
+            self.items = updated
+            self.collectionView.insertItems(at: paths)
+        }
+    }
+
     /// Follows the pager (unless the user is scrubbing the strip itself).
     func setCurrent(_ index: Int, animated: Bool) {
         guard index != layout.current || !isUserScrubbing else { return }
