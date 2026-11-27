@@ -6,15 +6,17 @@ import Persistence
 import Sync
 
 /// One signed-in Immich account on one server address.
-struct ImmichConnection: CloudConnection {
+struct ImmichConnection: CloudConnection, CloudTimelineBrowsing {
     let server: ActiveServer
     private let token: String
     private let client: Client
+    private let timeline: GalleryTimeline
 
     init(server: ActiveServer, token: String, session: URLSession) {
         self.server = server
         self.token = token
         client = ImmichClient.make(server: server.url, session: session) { token }
+        timeline = GalleryTimeline(server: server.url, token: token) { try await session.data(for: $0) }
     }
 
     // MARK: Media
@@ -53,6 +55,16 @@ struct ImmichConnection: CloudConnection {
     }
     func smartSearch(_ text: String, limit: Int) async throws -> [CloudAsset] { try await client.smartSearch(text, limit: limit) }
     func trashRetentionDays() async throws -> Int { try await client.trashRetentionDays() }
+
+    // MARK: Timeline browsing
+
+    func timelineBuckets(_ query: CloudTimelineQuery) async throws -> [CloudTimelineBucket] {
+        try await timeline.buckets(query)
+    }
+
+    func timelineItems(_ bucket: CloudTimelineBucket, query: CloudTimelineQuery) async throws -> [TimelineItem] {
+        try await timeline.items(bucket, query: query)
+    }
 
     // MARK: Library sync
 

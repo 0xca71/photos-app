@@ -9,23 +9,59 @@ struct LibraryScreen: View {
     let model: AppModel
     let session: LibrarySession
     @Bindable var ui: LibraryUIState
+    @State private var previousAssetID: String?
+
+    var body: some View {
+        let query = CloudTimelineQuery(userID: session.account.userID, filter: ui.filter,
+                                       addedOrder: ui.sort == .added, showScreenshots: ui.options.showScreenshots,
+                                       showShared: ui.options.showSharedWithYou)
+        LibraryTimelineView(model: model, session: session, ui: ui, query: query, previousAssetID: $previousAssetID)
+            .id(query)
+            .id(session.server)
+    }
+}
+
+/// Owns requests and grid commands for exactly one account, server, and filtered dataset.
+private struct LibraryTimelineView: View {
+    let model: AppModel
+    let session: LibrarySession
+    @Bindable var ui: LibraryUIState
+    let query: CloudTimelineQuery
+    @Binding var previousAssetID: String?
     @AppStorage("library.columns") private var columns = 5
     @State private var filtered = FilteredTimeline()
     @State private var headerBottom: CGFloat = 120
     /// The bottom safe area: the tab bar (and its accessory), or just the home indicator.
     @State private var safeBottom: CGFloat = 0
     @State private var timeGroups = TimeGroupCache()
+    @State private var window: CloudTimelineWindow?
+    @State private var useServerWindow = false
+    @State private var version = -2 // Local FilteredTimeline versions are positive; -1 is the grid's initial version.
+    @State private var randomTarget: LibraryRandomTarget?
+    @State private var request: Task<Void, Never>?
+    @State private var sequence = 0
+    @State private var loadError: String?
+
+    private var serverGrid: Bool {
+        useServerWindow || (session.photoAccess != .authorized && session.photoAccess != .limited)
+    }
+
+    private var snapshot: TimelineSnapshot {
+        if serverGrid { return TimelineSnapshot(items: window?.items ?? [], version: version, isLoaded: window != nil) }
+        return filtered.snapshot(for: session.timeline, ui: ui, myUserID: query.userID)
+    }
 
     var body: some View {
-        let snapshot = filtered.snapshot(for: session.timeline, ui: ui, myUserID: session.account.userID)
         ZStack(alignment: .top) {
             content(snapshot)
             TopScrim(height: headerBottom + 44)
                 .ignoresSafeArea(edges: .top)
             LibraryHeader(
                 ui: ui,
-                itemCount: snapshot.items.count,
+                itemCount: serverGrid ? window?.count ?? snapshot.items.count : snapshot.items.count,
                 syncPaused: model.isSyncPaused,
+                randomJump: { browse(.random) },
+                canRandomJump: request == nil && (!serverGrid || window?.count != 0),
                 selectionMenu: { AnyView(SelectionMenu(model: model, session: session, ui: ui, items: snapshot.items)) }
             )
             .onGeometryChange(for: CGFloat.self) { proxy in
@@ -41,6 +77,98 @@ struct LibraryScreen: View {
             }
         }
         .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.bottom } action: { safeBottom = $0 }
+        .onAppear { loadIfNeeded() }
+        .onDisappear { cancelRequest() }
+        .onChange(of: ui.isSelecting) { _, selecting in
+            if selecting { cancelRequest() } else { loadIfNeeded() }
+        }
+        .onChange(of: ui.section) { _, section in
+            if section == .library { loadIfNeeded() } else { cancelRequest() }
+        }
+        .onChange(of: ui.timeScale) { _, scale in
+            // A successful jump opens All from Years/Months; keep its pending layout command.
+            if scale == .all && randomTarget?.sequence == sequence { return }
+            cancelRequest()
+            loadIfNeeded()
+        }
+        .onChange(of: ui.scrollTarget) { _, date in if date != nil { cancelRequest() } }
+    }
+
+    private enum BrowseAction { case initial, random, older, newer, groups }
+
+    private func cancelRequest() {
+        sequence += 1
+        request?.cancel()
+        request = nil
+        randomTarget = nil
+    }
+
+    private func loadIfNeeded() {
+        guard serverGrid, session.server != nil, request == nil, !ui.isSelecting, ui.section == .library else { return }
+        if ui.timeScale != .all, window?.hasOlder != false || window?.hasNewer != false { browse(.groups) }
+        else if window == nil { browse(.initial) }
+    }
+
+    private func browse(_ action: BrowseAction) {
+        guard request == nil, !ui.isSelecting, ui.section == .library else { return }
+        sequence += 1
+        let ticket = sequence
+        let scale = ui.timeScale
+        let server = session.server
+        let isCurrent = {
+            !Task.isCancelled && ticket == sequence && !ui.isSelecting && ui.section == .library && ui.timeScale == scale
+                && ui.filter == query.filter && (ui.sort == .added) == query.addedOrder
+                && ui.options.showScreenshots == query.showScreenshots && ui.options.showSharedWithYou == query.showShared
+                && model.session === session && session.server == server
+        }
+        if action == .random { ui.scrollTarget = nil }
+        let reload = loadError != nil
+        loadError = nil
+        request = Task {
+            defer { if ticket == sequence { request = nil } }
+            do {
+                var next: CloudTimelineWindow
+                if let window, !reload { next = window } else {
+                    guard let source = try session.connected() as? any CloudTimelineBrowsing else {
+                        throw CloudError(kind: .transport, message: String(localized: "This server does not support timeline browsing."))
+                    }
+                    next = try await CloudTimelineWindow(source: source, query: query)
+                }
+                guard isCurrent() else { return }
+                let index: Int?
+                switch action {
+                case .random: index = try await next.randomIndex(previousID: previousAssetID)
+                case .groups: try await next.loadAll(); index = nil
+                case .initial, .older, .newer: try await next.extend(older: action != .newer); index = nil
+                }
+                guard isCurrent() else { return }
+                if reload || window?.revision != next.revision { version -= 1 }
+                window = next
+                if let index {
+                    let assetID = next.items[index].id
+                    // Keep an existing merged grid if it contains this verified Gallery target.
+                    // The unsynced Not in an Album filter has no local membership information.
+                    let localIndex = !serverGrid && query.filter != .notInAlbum ? snapshot.items.firstIndex { $0.id == assetID } : nil
+                    if localIndex == nil { useServerWindow = true }
+                    ui.timeScale = .all
+                    previousAssetID = assetID
+                    randomTarget = LibraryRandomTarget(index: localIndex ?? index, assetID: assetID,
+                                                       version: snapshot.version, sequence: ticket)
+                }
+            } catch {
+                guard isCurrent() else { return }
+                loadError = CloudError.message(for: error)
+                if !snapshot.items.isEmpty || !serverGrid { ui.showToast(CloudError.message(for: error)) }
+            }
+        }
+    }
+
+    private func browseEdges(older: Bool, newer: Bool, version reported: Int) {
+        Task { @MainActor in
+            guard reported == version, serverGrid, let window, request == nil, loadError == nil else { return }
+            if older && window.hasOlder { browse(.older) }
+            else if (newer || older && !window.hasOlder) && window.hasNewer { browse(.newer) }
+        }
     }
 
     /// Select mode's footer replaces the tab bar; the grid clears it as before.
@@ -55,14 +183,25 @@ struct LibraryScreen: View {
             ZStack {
                 PhotoGridView(
                     snapshot: snapshot, session: session, columns: $columns, ui: ui,
-                    insets: UIEdgeInsets(top: headerBottom + 6, left: 0, bottom: bottomPadding, right: 0)
+                    insets: UIEdgeInsets(top: headerBottom + 6, left: 0, bottom: bottomPadding, right: 0),
+                    randomTarget: randomTarget, onBrowseEdges: serverGrid ? browseEdges : nil
                 )
                 .ignoresSafeArea()
                 .opacity(snapshot.items.isEmpty ? 0 : 1)
-                if snapshot.isLoaded && snapshot.items.isEmpty {
+                if serverGrid && snapshot.items.isEmpty, let loadError {
+                    ContentUnavailableView {
+                        Label("Couldn’t Load Library", systemImage: "exclamationmark.icloud")
+                    } description: { Text(loadError) } actions: { Button("Try Again") { browse(.initial) } }
+                } else if serverGrid && !snapshot.isLoaded {
+                    if case .unreachable(let reasons) = model.connection {
+                        ContentUnavailableView("Server Not Reachable", systemImage: "wifi.exclamationmark", description: Text(reasons.joined(separator: "\n")))
+                    } else { ProgressView("Loading Your Library") }
+                } else if snapshot.isLoaded && snapshot.items.isEmpty {
                     if ui.isFiltered {
                         ContentUnavailableView("No Items", systemImage: "line.3.horizontal.decrease.circle",
                                                description: Text("Nothing matches the current filter."))
+                    } else if serverGrid {
+                        ContentUnavailableView("No Photos", systemImage: "photo.on.rectangle", description: Text("Photos on your Cloud server appear here."))
                     } else {
                         EmptyLibraryView(session: session, connection: model.connection)
                     }
@@ -89,7 +228,7 @@ final class FilteredTimeline {
     private struct Key: Equatable {
         let version: Int
         let sort: LibrarySort
-        let filter: LibraryFilter
+        let filter: CloudTimelineFilter
         let options: LibraryViewOptions
     }
     private var key: Key?
@@ -201,6 +340,8 @@ struct PhotoGridView: UIViewControllerRepresentable {
     @Binding var columns: Int
     var ui: LibraryUIState?
     var insets: UIEdgeInsets = .zero
+    var randomTarget: LibraryRandomTarget? = nil
+    var onBrowseEdges: ((Bool, Bool, Int) -> Void)? = nil
     /// The Library's own grid: reports scrolling to the chrome and takes its commands
     /// (zoom, share, scroll). False for secondary grids such as Show Selected.
     var isPrimary = true
@@ -250,6 +391,9 @@ struct PhotoGridView: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ controller: PhotoGridViewController, context: Context) {
+        controller.onBrowseEdges = onBrowseEdges
+        controller.setRandomTarget(isPrimary ? randomTarget : nil,
+                                   allowed: randomTarget?.version == snapshot.version && ui?.isSelecting == false && ui?.scrollTarget == nil)
         controller.apply(items: snapshot.items, version: snapshot.version)
         controller.contentInsets = insets
         controller.showsStatus = showsStatus && mode == .library
@@ -275,6 +419,7 @@ struct PhotoGridView: UIViewControllerRepresentable {
         }
         if let target = ui.scrollTarget {
             DispatchQueue.main.async {
+                guard ui.scrollTarget == target else { return }
                 controller.scroll(to: target)
                 ui.scrollTarget = nil
             }

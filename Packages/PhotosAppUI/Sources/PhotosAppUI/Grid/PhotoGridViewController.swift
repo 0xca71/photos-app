@@ -25,9 +25,18 @@ final class PhotoGridViewController: UIViewController {
     /// user is touching or moving the grid, whether it's at the newest photos, and
     /// whether the user scrolled (which morphs the bottom bar).
     var onScrollInfo: ((_ range: ClosedRange<Date>?, _ interacting: Bool, _ atBottom: Bool, _ userScrolled: Bool) -> Void)?
+    /// Oldest/newest visible edges and the version of the window being browsed.
+    var onBrowseEdges: ((_ older: Bool, _ newer: Bool, _ version: Int) -> Void)? {
+        didSet {
+            if oldValue == nil, onBrowseEdges != nil {
+                reportedBrowseEdges = (false, false)
+                viewIfLoaded?.setNeedsLayout()
+            }
+        }
+    }
     /// Space under the overlaid header and above the tab bar (or select footer).
     var contentInsets = UIEdgeInsets.zero {
-        didSet { if contentInsets != oldValue { applyInsets() } }
+        didSet { if contentInsets != oldValue { updateViewport { applyInsets() } } }
     }
     /// View Options › Aspect Ratio Grid: whole photos in their tiles instead of square crops.
     var aspectRatioGrid = false {
@@ -71,6 +80,11 @@ final class PhotoGridViewController: UIViewController {
     private let scrubber = ScrubberView()
     private var lastReport: (range: ClosedRange<Date>?, interacting: Bool, atBottom: Bool)?
     private var userScrollReported = false
+    private var reportedBrowseEdges = (older: false, newer: false)
+    private var changingViewport = false
+    private var pendingRandomTarget: LibraryRandomTarget?
+    private var latestRandomSequence: Int?
+    private weak var randomHighlight: UIView?
 
     // Drag to select
     private var selectPan: UIPanGestureRecognizer!
@@ -171,6 +185,7 @@ final class PhotoGridViewController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         registerWithTabBar()
+        if pendingRandomTarget != nil || onBrowseEdges != nil { view.setNeedsLayout() }
     }
 
     /// iOS 26's tab bar shrinks while the tab's main scroll view scrolls (and fades its
@@ -190,6 +205,14 @@ final class PhotoGridViewController: UIViewController {
 
     private var scrubberTop: NSLayoutConstraint?
     private var scrubberBottom: NSLayoutConstraint?
+
+    /// A programmatic offset can produce didScroll even during a user's deceleration.
+    private func updateViewport(_ change: () -> Void) {
+        let previous = changingViewport
+        changingViewport = true
+        change()
+        changingViewport = previous
+    }
 
     private func applyInsets() {
         guard isViewLoaded else { return }
@@ -277,6 +300,7 @@ final class PhotoGridViewController: UIViewController {
                 }
             }
         }
+        landPendingRandomJump()
         reportScroll()
     }
 
@@ -284,9 +308,11 @@ final class PhotoGridViewController: UIViewController {
         let anchor = captureAnchor()
         super.viewWillTransition(to: size, with: coordinator)
         coordinator.animate { _ in
-            self.collectionView.collectionViewLayout.invalidateLayout()
-            self.collectionView.layoutIfNeeded()
-            self.restore(anchor)
+            self.updateViewport {
+                self.collectionView.collectionViewLayout.invalidateLayout()
+                self.collectionView.layoutIfNeeded()
+                self.restore(anchor)
+            }
         }
     }
 
@@ -312,7 +338,16 @@ final class PhotoGridViewController: UIViewController {
             items = newItems
             return
         }
+        changingViewport = true
+        defer {
+            changingViewport = false
+            if pendingRandomTarget != nil || onBrowseEdges != nil { view.setNeedsLayout() }
+        }
+        reportedBrowseEdges = (false, false)
         let wasAtBottom = isNearBottom
+        // An appended page extends the loaded window, not the actual end of the Library.
+        // Keep the previous tiles in view rather than skipping over the entire new page.
+        let extendingWindow = onBrowseEdges != nil && !items.isEmpty && newItems.count > items.count
         let anchor = items.isEmpty ? nil : captureAnchor()
         if !didInitialScroll, onScrollInfo != nil { LaunchTiming.mark("apply") }
         items = newItems
@@ -321,7 +356,7 @@ final class PhotoGridViewController: UIViewController {
         collectionView.layoutIfNeeded()
         if !didInitialScroll, onScrollInfo != nil { LaunchTiming.mark("laidOut") }
 
-        if !didInitialScroll || wasAtBottom {
+        if !didInitialScroll || (wasAtBottom && !extendingWindow) {
             if !items.isEmpty, collectionView.bounds.height > 0 {
                 didInitialScroll = true
                 scrollToBottom()
@@ -331,8 +366,8 @@ final class PhotoGridViewController: UIViewController {
                     LaunchTiming.firstGridShown(items: items.count)
                 }
             }
-        } else {
-            restore(anchor)
+        } else if !restore(anchor), wasAtBottom {
+            scrollToBottom()
         }
         reportScroll()
         loadVisibleTilesIfIdle()
@@ -362,11 +397,13 @@ final class PhotoGridViewController: UIViewController {
         return Anchor(id: items[index].id, viewY: frame.minY - collectionView.contentOffset.y)
     }
 
-    private func restore(_ anchor: Anchor?) {
-        guard let anchor, let index = items.firstIndex(where: { $0.id == anchor.id }) else { return }
+    @discardableResult
+    private func restore(_ anchor: Anchor?) -> Bool {
+        guard let anchor, let index = items.firstIndex(where: { $0.id == anchor.id }) else { return false }
         let frame = gridLayout.frame(forItemAt: index)
         let offset = gridLayout.clampedOffset(placing: frame.origin, atViewY: anchor.viewY, in: collectionView)
         collectionView.setContentOffset(offset, animated: false)
+        return true
     }
 
     // MARK: Scrubbing and date header
@@ -394,16 +431,33 @@ final class PhotoGridViewController: UIViewController {
         return Formatting.monthYear(items[index].date)
     }
 
+    private func reportBrowseEdges(visible: Range<Int>, browsing: Bool) {
+        guard let onBrowseEdges, !changingViewport, !isZooming, !isSelecting, didInitialScroll,
+              view.window != nil, !visible.isEmpty, gridLayout.metrics.itemCount == items.count,
+              gridLayout.metrics.width == collectionView.bounds.width else { return }
+        let visibleHeight = collectionView.bounds.height - contentInsets.top - contentInsets.bottom
+        guard visibleHeight > 0 else { return }
+        let short = collectionView.contentSize.height <= visibleHeight
+        guard browsing || short else { return }
+        let margin = 2 * columns
+        let edges = (older: short || visible.lowerBound < margin, newer: !short && items.count - visible.upperBound < margin)
+        guard edges != reportedBrowseEdges else { return }
+        reportedBrowseEdges = edges
+        if edges.older || edges.newer { onBrowseEdges(edges.older, edges.newer, version) }
+    }
+
     /// Tells the Library header what's on screen (only when something changed).
-    private func reportScroll(userScrolled: Bool = false) {
+    private func reportScroll(userScrolled: Bool = false, browsing: Bool = false) {
         guard isViewLoaded, collectionView.bounds.height > 0 else { return }
         let offset = collectionView.contentOffset.y
         let visible = gridLayout.metrics.indexRange(
             minY: offset + contentInsets.top,
             maxY: offset + collectionView.bounds.height - contentInsets.bottom
         ).clamped(to: 0..<items.count)
+        reportBrowseEdges(visible: visible, browsing: browsing)
         var range: ClosedRange<Date>?
         if !visible.isEmpty {
+            // Added order need not be capture-date order, even within a single row.
             var low = items[visible.lowerBound].date, high = low
             for index in visible {
                 let date = items[index].date
@@ -440,10 +494,71 @@ final class PhotoGridViewController: UIViewController {
         let relativeY = min(max((center.y - frame.minY) / max(frame.height, 1), 0), 1)
         let pinch = Pinch(startSide: gridLayout.itemSide, anchorIndex: index, anchorRelativeY: relativeY,
                           fingerY: collectionView.bounds.height / 2, effectiveSide: gridLayout.itemSide)
-        switchLevel(to: GridLevels.columns[next], pinch: pinch)
+        updateViewport { switchLevel(to: GridLevels.columns[next], pinch: pinch) }
         onColumnsChanged?(columns)
         reportScroll()
         loadVisibleTilesIfIdle()
+    }
+
+    /// Remember even a suppressed sequence: ending selection or consuming a date
+    /// command must not revive a random jump from the same SwiftUI update.
+    func setRandomTarget(_ target: LibraryRandomTarget?, allowed: Bool) {
+        if let target, latestRandomSequence.map({ $0 < target.sequence }) ?? true {
+            latestRandomSequence = target.sequence
+            pendingRandomTarget = target
+            randomHighlight?.removeFromSuperview()
+            viewIfLoaded?.setNeedsLayout()
+        }
+        if target == nil || !allowed {
+            pendingRandomTarget = nil
+            randomHighlight?.removeFromSuperview()
+        }
+    }
+
+    private func landPendingRandomJump() {
+        guard let target = pendingRandomTarget, target.version == version, !isSelecting,
+              !changingViewport, !isZooming, didInitialScroll, view.window != nil else { return }
+        guard items.indices.contains(target.index), items[target.index].id == target.assetID else {
+            pendingRandomTarget = nil
+            return
+        }
+        let insets = collectionView.adjustedContentInset
+        let visibleHeight = collectionView.bounds.height - insets.top - insets.bottom
+        guard visibleHeight > 0, collectionView.bounds.width > 0 else { return }
+        changingViewport = true
+        defer { changingViewport = false }
+        collectionView.layoutIfNeeded()
+        guard gridLayout.metrics.itemCount == items.count, gridLayout.metrics.width == collectionView.bounds.width else { return }
+
+        pendingRandomTarget = nil
+        let frame = gridLayout.frame(forItemAt: target.index)
+        let offset = gridLayout.clampedOffset(placing: CGPoint(x: frame.midX, y: frame.midY),
+                                              atViewY: insets.top + visibleHeight / 2, in: collectionView)
+        collectionView.setContentOffset(offset, animated: false)
+        collectionView.layoutIfNeeded()
+        let path = IndexPath(item: target.index, section: 0)
+        if let cell = collectionView.cellForItem(at: path) as? PhotoGridCell, cell.assetID == target.assetID {
+            highlightRandomTile(cell)
+        }
+        loadVisibleTilesIfIdle()
+    }
+
+    /// Distinguishes the exact tile even if all matches already fit on screen.
+    private func highlightRandomTile(_ cell: PhotoGridCell) {
+        let highlight = UIView(frame: cell.contentView.bounds)
+        highlight.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        highlight.isUserInteractionEnabled = false
+        highlight.backgroundColor = UIColor.systemYellow.withAlphaComponent(0.16)
+        highlight.layer.borderColor = UIColor.systemYellow.cgColor
+        highlight.layer.borderWidth = 3
+        cell.contentView.addSubview(highlight)
+        randomHighlight = highlight
+        UIView.animate(withDuration: 0.35, delay: 0.8, options: [.allowUserInteraction]) {
+            highlight.alpha = 0
+        } completion: { _ in
+            highlight.removeFromSuperview()
+        }
+        if UIAccessibility.isVoiceOverRunning { UIAccessibility.post(notification: .layoutChanged, argument: cell) }
     }
 
     /// Years/Months › a month: shows the first photo on or after `date` near the top.
@@ -452,7 +567,7 @@ final class PhotoGridViewController: UIViewController {
         let index = items.firstIndex { $0.date >= date } ?? items.count - 1
         let frame = gridLayout.frame(forItemAt: index)
         let offset = gridLayout.clampedOffset(placing: frame.origin, atViewY: contentInsets.top + 8, in: collectionView)
-        collectionView.setContentOffset(offset, animated: false)
+        updateViewport { collectionView.setContentOffset(offset, animated: false) }
         reportScroll()
         loadVisibleTilesIfIdle()
     }
@@ -624,6 +739,7 @@ final class PhotoGridViewController: UIViewController {
             deferredItems = nil
             apply(items: deferred.items, version: deferred.version)
         }
+        if pendingRandomTarget != nil { view.setNeedsLayout() }
         reportScroll()
         loadVisibleTilesIfIdle()
     }
@@ -694,6 +810,10 @@ extension PhotoGridViewController: UICollectionViewDataSource, UICollectionViewD
         cell.contentView.alpha = item.id == hiddenTileID ? 0 : 1
         cell.setDisplay(aspectFit: aspectRatioGrid, selectable: isSelecting, selected: isSelecting && isSelected(item.id))
         return cell
+    }
+
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        if randomHighlight?.superview === cell.contentView { randomHighlight?.removeFromSuperview() }
     }
 
     func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
@@ -789,6 +909,7 @@ extension PhotoGridViewController: UICollectionViewDataSource, UICollectionViewD
 
     func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
         userScrollReported = false
+        reportedBrowseEdges = (false, false)
     }
 
     func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
@@ -804,8 +925,9 @@ extension PhotoGridViewController: UICollectionViewDataSource, UICollectionViewD
     }
 
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        reportScroll(userScrolled: scrollView.isDragging)
-        guard scrollView.isDragging || scrollView.isDecelerating || scrubber.isDragging else { return }
+        let browsing = scrollView.isDragging || scrollView.isDecelerating || scrubber.isDragging
+        reportScroll(userScrolled: scrollView.isDragging, browsing: browsing)
+        guard browsing else { return }
         scrubber.scrollPositionChanged(fraction: scrollFraction)
     }
 }
@@ -822,8 +944,10 @@ extension PhotoGridViewController: ViewerTransitionSource {
             if !visible.contains(frame) {
                 // Centre the tile of the photo being closed.
                 let offset = gridLayout.clampedOffset(placing: CGPoint(x: 0, y: frame.midY), atViewY: collectionView.bounds.height / 2, in: collectionView)
-                collectionView.setContentOffset(offset, animated: false)
-                collectionView.layoutIfNeeded()
+                updateViewport {
+                    collectionView.setContentOffset(offset, animated: false)
+                    collectionView.layoutIfNeeded()
+                }
                 reportScroll()
             }
         }

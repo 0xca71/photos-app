@@ -322,6 +322,9 @@
 "Preparing…" = "正在准备……";
 "Previews" = "预览";
 "Problems" = "问题";
+"Random Jump" = "随机跳转";
+"The timeline changed. Please try again." = "时间线已更新，请重试。";
+"This server does not support timeline browsing." = "此服务器不支持浏览时间线。";
 "Recently Deleted" = "最近删除";
 "Recently Saved" = "最近保存";
 "Recently Shared" = "最近共享";

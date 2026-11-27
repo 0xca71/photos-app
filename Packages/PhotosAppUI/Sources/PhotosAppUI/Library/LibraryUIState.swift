@@ -1,3 +1,4 @@
+import CloudCore
 import Foundation
 import Observation
 import Persistence
@@ -8,11 +9,6 @@ enum LibrarySort: String, CaseIterable, Sendable {
     case added
     /// Capture date (default).
     case captured
-}
-
-enum LibraryFilter: String, CaseIterable, Sendable {
-    case all, favourites, edited, sharedWithYou, capturedByMe, notInAlbum
-    case photos, videos, screenshots
 }
 
 struct LibraryViewOptions: Equatable, Sendable {
@@ -39,6 +35,15 @@ enum AppSection: Hashable, Sendable {
     case search
 }
 
+/// A one-shot destination in a particular filtered Library snapshot. Sequence is
+/// per tap, not per asset: even a single-item result can be revealed again.
+struct LibraryRandomTarget: Equatable, Sendable {
+    let index: Int
+    let assetID: String
+    let version: Int
+    let sequence: Int
+}
+
 /// State shared by the Library's SwiftUI chrome (header, bottom bar, menus) and the
 /// UIKit grid. The grid reports scrolling; the chrome reflects it.
 @MainActor
@@ -48,7 +53,7 @@ final class LibraryUIState {
     var barMode = BarMode.tabs
     var timeScale = TimeScale.all
     var sort = LibrarySort.captured
-    var filter = LibraryFilter.all
+    var filter = CloudTimelineFilter.all
     var options = LibraryViewOptions()
     var pendingSheet: SelectionSheet?
     /// Set by the footer's Share button; the grid opens the share screen and clears it.
