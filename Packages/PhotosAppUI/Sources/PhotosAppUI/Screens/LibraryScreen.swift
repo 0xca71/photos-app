@@ -41,6 +41,11 @@ struct LibraryScreen: View {
             }
         }
         .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.bottom } action: { safeBottom = $0 }
+        .onChange(of: ui.section) { _, section in
+            if section == .library {
+                ui.scrollToBottomRequested = true
+            }
+        }
     }
 
     /// Select mode's footer replaces the tab bar; the grid clears it as before.
@@ -290,6 +295,12 @@ struct PhotoGridView: UIViewControllerRepresentable {
             DispatchQueue.main.async {
                 controller.scroll(to: target)
                 ui.scrollTarget = nil
+            }
+        }
+        if isPrimary, ui.scrollToBottomRequested {
+            DispatchQueue.main.async {
+                controller.scrollToBottom()
+                ui.scrollToBottomRequested = false
             }
         }
     }
