@@ -27,13 +27,13 @@ import Testing
         try store.setUp(password: "1234", timeout: .fiveMinutes)
         #expect(store.isEnabled)
         #expect(!store.isLocked)
-        #expect(store.passwordLength == 6)
+        #expect(store.passwordLength == 4)
         #expect(store.timeout == .fiveMinutes)
 
         let reloaded = AppLockStore(defaults: defaults, secrets: secrets)
         #expect(reloaded.isEnabled)
         #expect(reloaded.isLocked)
-        #expect(reloaded.passwordLength == 6)
+        #expect(reloaded.passwordLength == 4)
         #expect(reloaded.timeout == .fiveMinutes)
     }
 
