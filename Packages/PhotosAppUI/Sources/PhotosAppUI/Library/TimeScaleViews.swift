@@ -129,7 +129,7 @@ private struct TimeGroupCard: View {
                 .padding(18)
             }
             .overlay(alignment: .bottomTrailing) {
-                Text(group.count == 1 ? "1 Item" : "\(group.count.formatted()) Items")
+                Text(group.count == 1 ? String(localized: "1 Item") : String(localized: "\(group.count.formatted()) Items"))
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.white)
                     .shadow(color: .black.opacity(0.45), radius: 4)

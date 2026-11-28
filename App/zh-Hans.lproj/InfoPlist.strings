@@ -1,4 +1,4 @@
-"NSLocalNetworkUsageDescription" = "Photos 需要连接家庭网络中的 Cloud 服务器。";
-"NSFaceIDUsageDescription" = "Face ID 用于解锁隐藏相册。";
-"NSPhotoLibraryUsageDescription" = "Photos 会显示此 iPhone 上的照片和视频，并在开启备份后上传它们。";
-"NSPhotoLibraryAddUsageDescription" = "Photos 会在你选择保存时，将 Cloud 中的照片和视频保存到此 iPhone。";
+"NSLocalNetworkUsageDescription" = "Photos 需要通过家庭网络连接你的云端服务器。";
+"NSFaceIDUsageDescription" = "使用面容 ID 解锁隐藏相册。";
+"NSPhotoLibraryUsageDescription" = "Photos 会将此 iPhone 上的照片和视频与云端资源库中的内容一同显示。开启备份后，也会备份此 iPhone 上的照片和视频。";
+"NSPhotoLibraryAddUsageDescription" = "选择“保存到此 iPhone”时，Photos 会将云端资源库中的照片和视频保存到这台设备。";

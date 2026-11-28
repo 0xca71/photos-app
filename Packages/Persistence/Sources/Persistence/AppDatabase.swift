@@ -216,6 +216,14 @@ public struct AppDatabase: Sendable {
             try db.create(index: "remoteAsset_stackId", on: "remoteAsset", columns: ["stackId"])
         }
 
+        // Gallery detailed addresses are server metadata. Keep them with the EXIF row so the
+        // viewer can reuse a saved address without resolving it again.
+        migrator.registerMigration("v8-formatted-address") { db in
+            try db.alter(table: "remoteExif") { t in
+                t.add(column: "formattedAddress", .text)
+            }
+        }
+
         return migrator
     }
 }

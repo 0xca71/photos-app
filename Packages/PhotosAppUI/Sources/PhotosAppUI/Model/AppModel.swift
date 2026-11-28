@@ -236,7 +236,7 @@ public final class AppModel {
     }
 
     public func sceneEnteredBackground() {
-        appLock.sceneBecameInactive()
+        appLock.sceneEnteredBackground()
         session?.setActive(false)
         scheduleBackgroundTasks()
     }
@@ -320,10 +320,11 @@ public final class AppModel {
     private func reachableServer() async throws -> ActiveServer {
         let status = await selector.resolve()
         guard let server = status.activeServer else {
+            var message = String(localized: "Could not reach the server.")
             if case .unreachable(let reasons) = status {
-                throw CloudError(kind: .transport, message: "Could not reach the server.\n" + reasons.joined(separator: "\n"))
+                message += "\n" + reasons.joined(separator: "\n")
             }
-            throw CloudError(kind: .transport, message: "Could not reach the server.")
+            throw CloudError(kind: .transport, message: message)
         }
         return server
     }
@@ -370,7 +371,7 @@ public final class AppModel {
         session = nil
         sessionError = nil
         guard let token else {
-            sessionError = "The sign-in for \(account.email) is missing from the Keychain. Sign in again."
+            sessionError = String(localized: "The sign-in for \(account.email) is missing from the Keychain. Sign in again.")
             return
         }
         do {
@@ -383,34 +384,68 @@ public final class AppModel {
             session.serverChanged(connection.activeServer)
         } catch {
             Log.database.error("Opening library failed: \(String(describing: error), privacy: .public)")
-            sessionError = "The library on this phone could not be opened: \(error.localizedDescription)"
+            sessionError = String(localized: "The library on this phone could not be opened: \(error.localizedDescription)")
         }
     }
 
     // MARK: Diagnostics
 
+    public struct ConnectivityCheck: Hashable {
+        fileprivate enum Status: Hashable {
+            case notConfigured, connected(URL), failed(URL, String)
+        }
+
+        fileprivate let route: ServerRoute
+        fileprivate let status: Status
+
+        public var succeeded: Bool {
+            if case .connected = status { return true }
+            return false
+        }
+
+        public var message: String {
+            let label = route == .local ? String(localized: "Local") : String(localized: "Remote")
+            switch status {
+            case .notConfigured: return String(localized: "\(label): not configured")
+            case .connected(let url): return String(localized: "\(label) \(url.absoluteString): OK")
+            case .failed(let url, let reason): return String(localized: "\(label) \(url.absoluteString): FAILED – \(reason)")
+            }
+        }
+
+        fileprivate var diagnosticLine: String {
+            let label = route == .local ? "Local" : "Remote"
+            switch status {
+            case .notConfigured: return "\(label): not configured"
+            case .connected(let url): return "\(label) \(url.absoluteString): OK"
+            case .failed(let url, let reason): return "\(label) \(url.absoluteString): FAILED – \(reason)"
+            }
+        }
+    }
+
     /// Pings each configured address separately and reports the result, so the
     /// App Transport Security behaviour can be checked on a device.
     /// Run with the launch argument `-ConnectivitySelfTest`.
-    public func connectivityReport() async -> [String] {
+    public func connectivityReport() async -> [ConnectivityCheck] {
         let addresses = serverSettings.addresses
-        var lines: [String] = []
-        for (label, url) in [("Local", addresses.local), ("Remote", addresses.remote)] {
-            guard let url else {
-                lines.append("\(label): not configured")
-                continue
+        var checks: [ConnectivityCheck] = []
+        for (route, url) in [(ServerRoute.local, addresses.local), (.remote, addresses.remote)] {
+            let status: ConnectivityCheck.Status
+            if let url {
+                switch await prober.ping(url, timeout: .seconds(5)) {
+                case .success: status = .connected(url)
+                case .failure(let error): status = .failed(url, error.message)
+                }
+            } else {
+                status = .notConfigured
             }
-            switch await prober.ping(url, timeout: .seconds(5)) {
-            case .success: lines.append("\(label) \(url.absoluteString): OK")
-            case .failure(let error): lines.append("\(label) \(url.absoluteString): FAILED – \(error.message)")
-            }
+            checks.append(ConnectivityCheck(route: route, status: status))
         }
-        return lines
+        return checks
     }
 
     /// `-SelfTestURL <url>` adds an extra address to the self-test (e.g. one without an ATS exception, as a control).
     private func runConnectivitySelfTest() async {
-        var lines = await connectivityReport()
+        var lines = await connectivityReport().map(\.diagnosticLine)
         let arguments = ProcessInfo.processInfo.arguments
         if let flag = arguments.firstIndex(of: "-SelfTestURL"), arguments.indices.contains(flag + 1),
            let url = URL(string: arguments[flag + 1]) {

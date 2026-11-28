@@ -9,11 +9,18 @@ public protocol SecretStore: Sendable {
     func delete(_ key: String) throws
 }
 
-public struct KeychainError: Error, CustomStringConvertible {
+public struct KeychainError: LocalizedError, CustomStringConvertible {
     public let status: OSStatus
 
+    private var systemMessage: String? { SecCopyErrorMessageString(status, nil) as String? }
+
+    public var errorDescription: String? {
+        let message = systemMessage ?? String(localized: "unknown error")
+        return String(localized: "Keychain error \(String(status)): \(message)")
+    }
+
     public var description: String {
-        let message = SecCopyErrorMessageString(status, nil) as String? ?? "unknown error"
+        let message = systemMessage ?? "unknown error"
         return "Keychain error \(status): \(message)"
     }
 }

@@ -33,7 +33,7 @@ enum Duplicator {
         guard let imageSource = CGImageSourceCreateWithURL(source as CFURL, nil),
               let type = CGImageSourceGetType(imageSource),
               let output = CGImageDestinationCreateWithURL(destination as CFURL, type, CGImageSourceGetCount(imageSource), nil)
-        else { throw MediaError(kind: .undecodable, message: "The photo couldn’t be read to duplicate it.") }
+        else { throw MediaError(kind: .undecodable, message: String(localized: "The photo couldn’t be read to duplicate it.")) }
 
         let metadata = CGImageMetadataCreateMutable()
         CGImageMetadataRegisterNamespaceForPrefix(metadata, markerNamespace as CFString, markerPrefix as CFString, nil)
@@ -44,8 +44,8 @@ enum Duplicator {
         ] as CFDictionary
         var error: Unmanaged<CFError>?
         guard CGImageDestinationCopyImageSource(output, imageSource, options, &error) else {
-            let reason = error?.takeRetainedValue().localizedDescription ?? "unknown error"
-            throw MediaError(kind: .undecodable, message: "Duplicating the photo failed: \(reason)")
+            let reason = error?.takeRetainedValue().localizedDescription ?? String(localized: "unknown error")
+            throw MediaError(kind: .undecodable, message: String(localized: "Duplicating the photo failed: \(reason)"))
         }
     }
 
@@ -53,7 +53,7 @@ enum Duplicator {
     static func copyVideo(_ source: URL, to destination: URL) async throws {
         let asset = AVURLAsset(url: source)
         guard let export = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetPassthrough) else {
-            throw MediaError(kind: .undecodable, message: "The video couldn’t be read to duplicate it.")
+            throw MediaError(kind: .undecodable, message: String(localized: "The video couldn’t be read to duplicate it."))
         }
         let marker = AVMutableMetadataItem()
         marker.keySpace = .quickTimeMetadata

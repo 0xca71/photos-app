@@ -110,7 +110,7 @@ extension LibrarySession {
     /// a Live Photo is saved with its motion part.
     public func saveToPhone(_ item: TimelineItem) async throws {
         guard let remoteID = item.remoteID, let details = detailsNow(for: remoteID) else {
-            throw CloudError(kind: .decoding, message: "This item isn't in your Cloud library.")
+            throw CloudError(kind: .decoding, message: String(localized: "This item isn't in your Cloud library."))
         }
         if LocalLibrary.authorization == .notDetermined { _ = await LocalLibrary.requestAuthorization() }
         let still = try await originals.file(assetID: remoteID, fileName: details.asset.originalFileName)

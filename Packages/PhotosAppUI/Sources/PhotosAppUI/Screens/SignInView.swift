@@ -74,7 +74,7 @@ struct SignInView: View {
                 Section {
                     Button(action: signInWithSingleSignOn) {
                         HStack {
-                            Text(options?.singleSignOnTitle ?? "Sign In with Single Sign-On")
+                            Text(options?.singleSignOnTitle ?? String(localized: "Sign In with Single Sign-On"))
                             Spacer()
                             if working == .singleSignOn { ProgressView() }
                         }
@@ -140,7 +140,7 @@ struct ServerAddressSection: View {
 
     @State private var local = ""
     @State private var remote = ""
-    @State private var report: [String]?
+    @State private var report: [AppModel.ConnectivityCheck]?
     @State private var isTesting = false
 
     var body: some View {
@@ -165,9 +165,9 @@ struct ServerAddressSection: View {
             .disabled(isTesting)
             if let report {
                 ForEach(report, id: \.self) { line in
-                    Text(line)
+                    Text(line.message)
                         .font(.footnote)
-                        .foregroundStyle(line.contains("OK") ? Color.secondary : Color.red)
+                        .foregroundStyle(line.succeeded ? Color.secondary : Color.red)
                 }
             }
         } header: {

@@ -62,14 +62,14 @@ struct ImmichBackupTransport: CloudBackupTransport {
         switch statusCode {
         case 200, 201:
             guard let response = try? JSONDecoder().decode(Response.self, from: body) else {
-                return .failure(CloudError(kind: .decoding, message: "Upload: the server's response could not be read."))
+                return .failure(CloudError(kind: .decoding, message: String(localized: "Upload: the server's response could not be read.")))
             }
             return .success(CloudUploadResult(assetID: response.id, created: statusCode == 201 && response.status != "duplicate"))
         case 401:
-            return .failure(CloudError(kind: .unauthorized, message: "The server rejected the sign-in (401). Sign in again."))
+            return .failure(CloudError(kind: .unauthorized, message: String(localized: "The server rejected the sign-in (401). Sign in again.")))
         default:
-            let detail = (try? JSONDecoder().decode(Failure.self, from: body))?.message.map { ": \($0.text)" } ?? ""
-            return .failure(CloudError(kind: .http(status: statusCode), message: "The server refused the upload (\(statusCode))\(detail)."))
+            let detail = (try? JSONDecoder().decode(Failure.self, from: body))?.message.map { String(localized: ": \($0.text)") } ?? ""
+            return .failure(CloudError(kind: .http(status: statusCode), message: String(localized: "The server refused the upload (\(statusCode))\(detail).")))
         }
     }
 

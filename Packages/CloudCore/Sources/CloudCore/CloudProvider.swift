@@ -54,6 +54,8 @@ public protocol CloudConnection: Sendable {
     func setDateTimeOriginal(_ iso8601: String, assetIDs: [String]) async throws
     func setLocation(latitude: Double, longitude: Double, assetIDs: [String]) async throws
     func setDescription(_ text: String, assetID: String) async throws
+    /// Resolves and stores a detailed server-side address for an asset without changing GPS.
+    func ensureAssetAddress(assetID: String) async throws -> String?
     /// Groups versions of one photo (an edited re-upload with its original).
     func stack(assetIDs: [String]) async throws
 

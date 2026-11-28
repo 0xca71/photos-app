@@ -96,7 +96,7 @@ public actor ServerSelector {
         ].compactMap { $0 }
 
         guard !candidates.isEmpty else {
-            return .unreachable(["No server address is configured."])
+            return .unreachable([String(localized: "No server address is configured.")])
         }
 
         for (route, url, timeout) in candidates {
@@ -106,9 +106,11 @@ public actor ServerSelector {
                 return .connected(ActiveServer(route: route, url: url))
             case .failure(let error):
                 let label = route == .local ? "Local" : "Remote"
-                let entry = "\(label) (\(url.host() ?? url.absoluteString)): \(error.message)"
-                Log.networking.notice("\(entry, privacy: .public)")
-                failures.append(entry)
+                let host = url.host() ?? url.absoluteString
+                Log.networking.notice("\(label, privacy: .public) (\(host, privacy: .public)): \(error.message, privacy: .public)")
+                failures.append(route == .local
+                    ? String(localized: "Local (\(host)): \(error.message)")
+                    : String(localized: "Remote (\(host)): \(error.message)"))
             }
         }
         return .unreachable(failures)

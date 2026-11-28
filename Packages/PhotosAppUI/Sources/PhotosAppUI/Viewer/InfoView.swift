@@ -24,6 +24,8 @@ final class InfoModel {
     let session: LibrarySession
     private var loadTask: Task<Void, Never>?
     private var peopleTask: Task<Void, Never>?
+    private var addressTask: Task<Void, Never>?
+    private var addressLookupAttempted = Set<String>()
 
     init(assetID: String, thumbnail: UIImage?, session: LibrarySession) {
         self.assetID = assetID
@@ -43,6 +45,8 @@ final class InfoModel {
         people = []
         loadTask?.cancel()
         peopleTask?.cancel()
+        addressTask?.cancel()
+        loadAddressIfNeeded(for: assetID, details: details)
         // Only on this iPhone: not in any Cloud album yet.
         if assetID.hasPrefix("local:") {
             albums = .loaded([])
@@ -62,6 +66,29 @@ final class InfoModel {
             } catch {
                 guard self.assetID == assetID else { return }
                 self.albums = .failed((error as? CloudError)?.message ?? error.localizedDescription)
+            }
+        }
+    }
+
+    private func loadAddressIfNeeded(for id: String, details: AssetDetails?) {
+        let country = details?.exif?.country?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !id.hasPrefix("local:"),
+              let exif = details?.exif,
+              exif.formattedAddress?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false,
+              exif.latitude != nil,
+              exif.longitude != nil,
+              ["China", "中国", "中华人民共和国"].contains(country),
+              addressLookupAttempted.insert(id).inserted else { return }
+
+        addressTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                guard try await self.session.ensureAssetAddress(for: id) != nil, !Task.isCancelled else { return }
+                guard self.assetID == id else { return }
+                self.details = self.session.detailsNow(for: id)
+            } catch is CancellationError {
+            } catch {
+                // Address lookup is an optional enhancement. The existing location and map stay visible.
             }
         }
     }
@@ -231,6 +258,7 @@ struct InfoView: View {
 
     private func mapCard(_ exif: RemoteExifRecord, coordinate: CLLocationCoordinate2D) -> some View {
         let place = InfoFormatting.place(exif) ?? String(localized: "Location")
+        let detailedAddress = InfoFormatting.detailedAddressRemainder(exif)
         return InfoCard {
             Map(initialPosition: .region(MKCoordinateRegion(center: coordinate, latitudinalMeters: 1500, longitudinalMeters: 1500)), interactionModes: []) {
                 Annotation("", coordinate: coordinate, anchor: .bottom) {
@@ -248,9 +276,22 @@ struct InfoView: View {
                     openURL(InfoFormatting.googleMapsURL(coordinate))
                 }
             } label: {
-                HStack(spacing: 4) {
-                    Text(place)
-                    Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+                HStack(alignment: .top, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        if !detailedAddress.isEmpty {
+                            Text(detailedAddress)
+                                .font(.body)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        if detailedAddress.isEmpty {
+                            Text(place).font(.subheadline)
+                        } else {
+                            Text(place).font(.subheadline).foregroundStyle(.secondary)
+                        }
+                    }
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.tertiary)
                     Spacer()
                 }
                 .padding(16)
@@ -333,6 +374,15 @@ private struct MapPhotoPin: View {
 }
 
 enum InfoFormatting {
+    static func detailedAddressRemainder(_ exif: RemoteExifRecord) -> String {
+        AddressFormatting.detailedAddressRemainder(
+            country: exif.country,
+            state: exif.state,
+            city: exif.city,
+            formattedAddress: exif.formattedAddress
+        )
+    }
+
     /// The capture time where it was taken (Immich `localDateTime` is wall-clock time stored as UTC).
     private static func wallClock(_ details: AssetDetails) -> Date? {
         details.asset.localDateTime ?? details.asset.fileCreatedAt
@@ -394,7 +444,9 @@ enum InfoFormatting {
             name = model
         }
         var optics: [String] = []
-        if let focal = exif.focalLength { optics.append("\(focal.formatted(.number.precision(.fractionLength(0...1)))) mm") }
+        if let focal = exif.focalLength {
+            optics.append(String(localized: "\(focal.formatted(.number.precision(.fractionLength(0...1)))) mm"))
+        }
         if let f = exif.fNumber { optics.append("ƒ\(f.formatted(.number.precision(.fractionLength(0...1))))") }
         switch (name, optics.isEmpty) {
         case (nil, true): return nil
@@ -411,7 +463,9 @@ enum InfoFormatting {
         let height = details.exif?.exifImageHeight ?? details.asset.height
         if let width, let height, width > 0, height > 0 {
             let megapixels = Double(width * height) / 1_000_000
-            if megapixels >= 1 { parts.append("\(megapixels.formatted(.number.precision(.fractionLength(0)))) MP") }
+            if megapixels >= 1 {
+                parts.append(String(localized: "\(megapixels.formatted(.number.precision(.fractionLength(0)))) MP"))
+            }
             parts.append("\(width) × \(height)")
         }
         if let size = details.exif?.fileSizeInByte { parts.append(Formatting.bytes(size)) }
@@ -424,9 +478,13 @@ enum InfoFormatting {
     static func exposureParts(_ exif: RemoteExifRecord) -> [String] {
         var parts: [String] = []
         if let iso = exif.iso { parts.append("ISO \(iso)") }
-        if let focal = exif.focalLength { parts.append("\(focal.formatted(.number.precision(.fractionLength(0...1)))) mm") }
+        if let focal = exif.focalLength {
+            parts.append(String(localized: "\(focal.formatted(.number.precision(.fractionLength(0...1)))) mm"))
+        }
         if let f = exif.fNumber { parts.append("ƒ\(f.formatted(.number.precision(.fractionLength(0...1))))") }
-        if let time = exif.exposureTime, !time.isEmpty { parts.append(time.contains("s") ? time : "\(time) s") }
+        if let time = exif.exposureTime, !time.isEmpty {
+            parts.append(time.contains("s") ? time : String(localized: "\(time) s"))
+        }
         return parts
     }
 

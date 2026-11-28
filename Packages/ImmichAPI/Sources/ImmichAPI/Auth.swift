@@ -29,7 +29,7 @@ extension Client {
                 isAdmin: dto.isAdmin
             )
         case .undocumented(401, _):
-            throw APIError(kind: .unauthorized, message: "Wrong email or password.")
+            throw APIError(kind: .unauthorized, message: String(localized: "Wrong email or password."))
         case .undocumented(let status, let payload):
             throw await APIError.from(statusCode: status, payload: payload, operation: "sign in")
         }

@@ -25,7 +25,7 @@ public struct MediaError: Error, LocalizedError, Sendable, Equatable {
         self.message = message
     }
 
-    static let offline = MediaError(kind: .offline, message: "Not connected to the server.")
+    static let offline = MediaError(kind: .offline, message: String(localized: "Not connected to the server."))
 }
 
 /// Downloads bytes for a URL request. Replaced in tests.
@@ -53,21 +53,21 @@ public struct URLSessionDownloader: MediaDownloader {
         do {
             let (data, response) = try await session.data(for: request)
             guard let http = response as? HTTPURLResponse else {
-                throw MediaError(kind: .server, message: "Unexpected response loading an image.")
+                throw MediaError(kind: .server, message: String(localized: "Unexpected response loading an image."))
             }
             switch http.statusCode {
             case 200:
                 return data
             case 401:
-                throw MediaError(kind: .unauthorized, message: "The server rejected the sign-in while loading an image (401).")
+                throw MediaError(kind: .unauthorized, message: String(localized: "The server rejected the sign-in while loading an image (401)."))
             case 404:
-                throw MediaError(kind: .notFound, message: "The server has no preview for this item yet (404). It may still be processing.")
+                throw MediaError(kind: .notFound, message: String(localized: "The server has no preview for this item yet (404). It may still be processing."))
             default:
-                throw MediaError(kind: .server, message: "The server returned \(http.statusCode) while loading an image.")
+                throw MediaError(kind: .server, message: String(localized: "The server returned \(http.statusCode) while loading an image."))
             }
         } catch let error as URLError {
             if error.code == .cancelled { throw CancellationError() }
-            throw MediaError(kind: .network, message: "Loading an image failed: \(NetworkErrorDescription.describe(error))")
+            throw MediaError(kind: .network, message: String(localized: "Loading an image failed: \(NetworkErrorDescription.describe(error))"))
         }
     }
 }
@@ -150,7 +150,7 @@ public actor RemoteImagePipeline {
         try Task.checkCancellation()
         guard let image = ImageDecoder.decode(data, maxPixelSize: maxPixelSize) else {
             disk.remove(diskKey)
-            throw MediaError(kind: .undecodable, message: "An image from the server could not be decoded.")
+            throw MediaError(kind: .undecodable, message: String(localized: "An image from the server could not be decoded."))
         }
         memory.insert(image, for: memoryKey)
         return image

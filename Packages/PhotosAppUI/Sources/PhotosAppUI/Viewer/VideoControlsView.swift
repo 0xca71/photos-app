@@ -117,7 +117,7 @@ final class VideoControlsView: UIView {
             muteIcon.setSymbolImage(UIImage(systemName: playback.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")!, contentTransition: .replace)
             muteButton.accessibilityLabel = playback.isMuted ? String(localized: "Unmute") : String(localized: "Mute")
         }
-        track.accessibilityValue = "\(Self.format(playback.currentTime, hundredths: false)) of \(Self.format(playback.duration, hundredths: false))"
+        track.accessibilityValue = String(localized: "\(Self.format(playback.currentTime, hundredths: false)) of \(Self.format(playback.duration, hundredths: false))")
         if isScrubbing { updateTimes() }
         updateFill()
     }

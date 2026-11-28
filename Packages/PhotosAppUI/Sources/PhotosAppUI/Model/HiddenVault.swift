@@ -78,7 +78,7 @@ public final class HiddenVault {
             }
         } catch {
             state = .locked
-            errorMessage = (error as? CloudError)?.message ?? (error as? KeychainError)?.description ?? error.localizedDescription
+            errorMessage = error.localizedDescription
             return false
         }
     }
@@ -100,7 +100,7 @@ public final class HiddenVault {
             state = .unlocked
             return true
         } catch {
-            errorMessage = (error as? CloudError)?.message ?? (error as? KeychainError)?.description ?? error.localizedDescription
+            errorMessage = error.localizedDescription
             state = .needsNewPin
             return false
         }

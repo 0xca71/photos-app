@@ -21,8 +21,7 @@ public struct RootView: View {
                 }
             }
             if model.appLock.isEnabled && scenePhase != .active {
-                Rectangle()
-                    .fill(.ultraThinMaterial)
+                Color(uiColor: .systemBackground)
                     .ignoresSafeArea()
                     .accessibilityHidden(true)
             }

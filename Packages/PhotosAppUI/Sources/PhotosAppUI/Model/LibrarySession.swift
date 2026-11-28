@@ -44,7 +44,7 @@ public final class LibrarySession {
     public let originals: OriginalStore
     /// The Hidden album (Immich Locked Folder), unlocked with Face ID.
     @ObservationIgnored public private(set) lazy var hiddenVault = HiddenVault(userID: account.userID) { [weak self] in
-        guard let self else { throw CloudError(kind: .transport, message: "Not signed in.") }
+        guard let self else { throw CloudError(kind: .transport, message: String(localized: "Not signed in.")) }
         return try self.connected()
     }
 
@@ -285,7 +285,7 @@ public final class LibrarySession {
                 result.serverError = CloudError.wrap(error, operation: "Server statistics").message
             }
         } else {
-            result.serverError = "Not connected to the server."
+            result.serverError = String(localized: "Not connected to the server.")
         }
         return result
     }
@@ -304,6 +304,19 @@ public final class LibrarySession {
     public func details(for assetID: String) async -> AssetDetails? {
         if assetID.hasPrefix("local:") { return phoneDetails(localID: String(assetID.dropFirst(6))) }
         return try? await database.reader.read { db in try AssetDetails.fetch(id: assetID, in: db) }
+    }
+
+    /// Resolves a Gallery detailed address for one server asset and stores the result in the local
+    /// EXIF cache. This is deliberately per-asset and on demand, never part of timeline loading.
+    public func ensureAssetAddress(for assetID: String) async throws -> String? {
+        guard !assetID.hasPrefix("local:") else { return nil }
+        guard let address = try await connected().ensureAssetAddress(assetID: assetID), !address.isEmpty else {
+            return nil
+        }
+        try await database.writer.write { db in
+            try RemoteStore.setFormattedAddress(address, id: assetID, in: db)
+        }
+        return address
     }
 
     public func albums(containing assetID: String) async throws -> [CloudAlbum] {
@@ -371,7 +384,7 @@ public final class LibrarySession {
     public func duplicate(assetID: String, keepHidden: Bool = false) async throws {
         try requireServerItems([assetID])
         guard let details = detailsNow(for: assetID) else {
-            throw CloudError(kind: .decoding, message: "This item is no longer in the library.")
+            throw CloudError(kind: .decoding, message: String(localized: "This item is no longer in the library."))
         }
         let connection = try connected()
         var motionID: String?

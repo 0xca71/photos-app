@@ -321,7 +321,7 @@ struct StatusBanner: View {
         if let warning = model.versionWarning, warning != dismissedWarning {
             banner(warning, systemImage: "exclamationmark.triangle.fill") { dismissedWarning = warning }
         } else if session.needsSignIn {
-            banner("The server no longer accepts this sign-in. Open Settings to sign in again.", systemImage: "person.crop.circle.badge.exclamationmark", onClose: nil)
+            banner(String(localized: "The server no longer accepts this sign-in. Open Settings to sign in again."), systemImage: "person.crop.circle.badge.exclamationmark", onClose: nil)
         } else if case .failed(let message, _) = session.syncStatus, !session.timeline.items.isEmpty {
             banner(message, systemImage: "exclamationmark.icloud") { session.syncNow() }
         }
@@ -367,6 +367,12 @@ struct PhotoGridView: UIViewControllerRepresentable {
     var takesCommands: Bool?
     /// Text centred at the bottom of each tile (Recently Deleted's days left).
     var caption: ((TimelineItem) -> TileCaption?)?
+    /// Fetches another batch for a grid whose server-side result is not finite in memory.
+    var onNearBottom: (() -> Void)?
+    /// Keeps the grid anchored when that batch is appended behind the current tile.
+    var preservesPositionWhenAppending = false
+    /// Appends another batch to the viewer while preserving its current page.
+    var viewerNearEnd: ((ViewerViewController) -> Void)?
     @AppStorage(PhotosSettings.showTileStatus) private var showsStatus = true
 
     func makeUIViewController(context: Context) -> PhotoGridViewController {
@@ -377,10 +383,12 @@ struct PhotoGridView: UIViewControllerRepresentable {
         controller.onColumnsChanged = { newValue in columns = newValue }
         let mode = mode
         let album = album
+        let viewerNearEnd = viewerNearEnd
         controller.makeViewer = { [weak session] items, index, source, placeholder in
             guard let session else { return nil }
             let viewer = ViewerViewController(items: items, index: index, session: session, source: source, mode: mode, placeholder: placeholder)
             viewer.album = album
+            viewer.onNearEnd = { viewer in viewerNearEnd?(viewer) }
             return viewer
         }
         controller.makeShare = { [weak session, weak ui] items, index, selection, origin, placeholder in
@@ -391,18 +399,22 @@ struct PhotoGridView: UIViewControllerRepresentable {
             }
             return screen
         }
-        if let ui {
-            if isPrimary {
-                controller.onScrollInfo = { [weak ui] range, interacting, atBottom, userScrolled in
+        if ui != nil || onNearBottom != nil {
+            controller.onScrollInfo = { [weak ui] range, interacting, atBottom, userScrolled in
+                if isPrimary {
                     ui?.gridScrolled(range: range, interacting: interacting, atBottom: atBottom, userScrolled: userScrolled)
                 }
+                if atBottom { onNearBottom?() }
             }
+        }
+        if let ui {
             controller.isSelected = { [weak ui] id in ui?.isSelected(id) ?? false }
             controller.onSelectionChange = { [weak ui] ids, selected in
                 for id in ids { ui?.setSelected(id, selected) }
             }
         }
         controller.contentInsets = insets
+        controller.preservesPositionWhenAppending = preservesPositionWhenAppending
         controller.apply(items: snapshot.items, version: snapshot.version)
         return controller
     }
@@ -413,6 +425,7 @@ struct PhotoGridView: UIViewControllerRepresentable {
                                    allowed: randomTarget?.version == snapshot.version && ui?.isSelecting == false && ui?.scrollTarget == nil)
         controller.apply(items: snapshot.items, version: snapshot.version)
         controller.contentInsets = insets
+        controller.preservesPositionWhenAppending = preservesPositionWhenAppending
         controller.showsStatus = showsStatus && mode == .library
         if let caption { controller.caption = caption }
         guard let ui else { return }

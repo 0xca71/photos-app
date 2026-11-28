@@ -15,6 +15,8 @@ struct CollectionDestinationView: View {
 
     var body: some View {
         switch route {
+        case .randomExplore:
+            RandomExploreScreen(session: session, albums: randomAlbums)
         case .smart(.hidden):
             HiddenAlbumScreen(session: session, shellUI: shellUI)
         case .smart(.recentlyDeleted):
@@ -40,6 +42,12 @@ struct CollectionDestinationView: View {
             PeopleScreen(session: session, initial: collections.people)
         case .person(let person):
             PersonScreen(person: person, session: session)
+        }
+    }
+
+    private var randomAlbums: [CloudAlbum] {
+        ((collections.albums ?? []) + (collections.sharedAlbums ?? [])).reduce(into: [CloudAlbum]()) { result, album in
+            if !result.contains(where: { $0.id == album.id }) { result.append(album) }
         }
     }
 

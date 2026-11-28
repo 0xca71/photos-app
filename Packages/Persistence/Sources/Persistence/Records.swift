@@ -93,6 +93,7 @@ public struct RemoteExifRecord: Codable, Sendable, Equatable, FetchableRecord, P
     public var city: String?
     public var state: String?
     public var country: String?
+    public var formattedAddress: String?
     public var description: String?
     public var profileDescription: String?
     public var projectionType: String?

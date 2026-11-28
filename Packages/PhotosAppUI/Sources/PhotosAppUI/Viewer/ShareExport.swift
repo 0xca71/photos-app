@@ -55,15 +55,15 @@ enum ShareExport {
 
     private static func copyWithoutLocation(_ original: URL, in folder: URL) throws -> URL {
         guard let source = CGImageSourceCreateWithURL(original as CFURL, nil), let type = CGImageSourceGetType(source) else {
-            throw MediaError(kind: .undecodable, message: "The photo couldn’t be prepared for sharing.")
+            throw MediaError(kind: .undecodable, message: String(localized: "The photo couldn’t be prepared for sharing."))
         }
         let output = try outputURL(for: original, in: folder)
         guard let destination = CGImageDestinationCreateWithURL(output as CFURL, type, CGImageSourceGetCount(source), nil) else {
-            throw MediaError(kind: .undecodable, message: "The photo couldn’t be prepared for sharing.")
+            throw MediaError(kind: .undecodable, message: String(localized: "The photo couldn’t be prepared for sharing."))
         }
         let options = [kCGImageMetadataShouldExcludeGPS: true] as CFDictionary
         guard CGImageDestinationCopyImageSource(destination, source, options, nil) else {
-            throw MediaError(kind: .undecodable, message: "Removing the location from the photo failed.")
+            throw MediaError(kind: .undecodable, message: String(localized: "Removing the location from the photo failed."))
         }
         return output
     }
@@ -71,17 +71,17 @@ enum ShareExport {
     static func convertToJPEG(_ original: URL, stripLocation: Bool, in folder: URL) throws -> URL {
         guard let source = CGImageSourceCreateWithURL(original as CFURL, nil),
               let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
-        else { throw MediaError(kind: .undecodable, message: "The photo couldn’t be converted for sharing.") }
+        else { throw MediaError(kind: .undecodable, message: String(localized: "The photo couldn’t be converted for sharing.")) }
         var properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any] ?? [:]
         if stripLocation { properties[kCGImagePropertyGPSDictionary] = nil }
         properties[kCGImageDestinationLossyCompressionQuality] = 0.92
         let output = try outputURL(for: original, extension: "jpg", in: folder)
         guard let destination = CGImageDestinationCreateWithURL(output as CFURL, UTType.jpeg.identifier as CFString, 1, nil) else {
-            throw MediaError(kind: .undecodable, message: "The photo couldn’t be converted for sharing.")
+            throw MediaError(kind: .undecodable, message: String(localized: "The photo couldn’t be converted for sharing."))
         }
         CGImageDestinationAddImage(destination, image, properties as CFDictionary)
         guard CGImageDestinationFinalize(destination) else {
-            throw MediaError(kind: .undecodable, message: "Converting the photo to JPEG failed.")
+            throw MediaError(kind: .undecodable, message: String(localized: "Converting the photo to JPEG failed."))
         }
         return output
     }
@@ -98,7 +98,7 @@ enum ShareExport {
         let asset = AVURLAsset(url: original)
         let preset = toH264 ? AVAssetExportPresetHighestQuality : AVAssetExportPresetPassthrough
         guard let export = AVAssetExportSession(asset: asset, presetName: preset) else {
-            throw MediaError(kind: .undecodable, message: "The video couldn’t be prepared for sharing.")
+            throw MediaError(kind: .undecodable, message: String(localized: "The video couldn’t be prepared for sharing."))
         }
         var metadata = try await asset.load(.metadata)
         if stripLocation {

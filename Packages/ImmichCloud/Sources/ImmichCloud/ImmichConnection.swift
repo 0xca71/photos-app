@@ -8,7 +8,7 @@ import Sync
 /// One signed-in Immich account on one server address.
 struct ImmichConnection: CloudConnection, CloudTimelineBrowsing {
     let server: ActiveServer
-    private let token: String
+    let token: String
     private let client: Client
     private let timeline: GalleryTimeline
 
@@ -90,6 +90,7 @@ struct ImmichConnection: CloudConnection, CloudTimelineBrowsing {
         try await client.setLocation(latitude: latitude, longitude: longitude, assetIDs: assetIDs)
     }
     func setDescription(_ text: String, assetID: String) async throws { try await client.setDescription(text, assetID: assetID) }
+    func ensureAssetAddress(assetID: String) async throws -> String? { try await client.ensureAssetAddress(assetID: assetID) }
     func stack(assetIDs: [String]) async throws { try await client.stack(assetIDs: assetIDs) }
 
     // MARK: Albums, memories, search, sharing

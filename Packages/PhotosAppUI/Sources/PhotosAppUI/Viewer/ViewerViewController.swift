@@ -23,6 +23,10 @@ final class ViewerViewController: UIViewController {
     }
 
     var album: AlbumContext?
+    /// Called once the viewer reaches the last few assets in a server-backed sequence.
+    /// A caller can append the next batch without replacing the viewer or changing its
+    /// current index.
+    var onNearEnd: ((ViewerViewController) -> Void)?
 
     private(set) var items: [TimelineItem]
     private var currentIndex: Int
@@ -69,6 +73,7 @@ final class ViewerViewController: UIViewController {
     private var chromeHidden = false
     private var transitionState = TransitionState.idle
     private var shareTask: Task<Void, Never>?
+    private var nearEndRequestCount = 0
 
     /// Gap between pages while swiping (a generous one).
     private let pageGap: CGFloat = 30
@@ -123,6 +128,24 @@ final class ViewerViewController: UIViewController {
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
     var currentItem: TimelineItem? { items.indices.contains(currentIndex) ? items[currentIndex] : nil }
+
+    /// Adds another part of the same exploration sequence. Existing pages keep their
+    /// indices, so a swipe never jumps back to the beginning of a newly fetched batch.
+    func appendItems(_ newItems: [TimelineItem]) {
+        guard !newItems.isEmpty else { return }
+        let existing = Set(items.map(\.id))
+        let unique = newItems.filter { !existing.contains($0.id) }
+        guard !unique.isEmpty else { return }
+        let start = items.count
+        items.append(contentsOf: unique)
+        guard isViewLoaded else { return }
+        let paths = unique.indices.map { IndexPath(item: start + $0, section: 0) }
+        collectionView.performBatchUpdates {
+            collectionView.insertItems(at: paths)
+        }
+        filmstrip.setItems(items, current: currentIndex)
+        nearEndRequestCount = 0
+    }
 
     private var currentPage: ViewerPageCell? {
         collectionView?.cellForItem(at: IndexPath(item: currentIndex, section: 0)) as? ViewerPageCell
@@ -228,6 +251,7 @@ final class ViewerViewController: UIViewController {
         collectionView.panGestureRecognizer.require(toFail: verticalPan)
 
         updateChrome()
+        requestMoreIfNeeded()
     }
 
     private var pagerFrame: CGRect {
@@ -1337,6 +1361,13 @@ extension ViewerViewController: UICollectionViewDataSource, UICollectionViewDele
             updateChrome()
             filmstrip.setCurrent(clamped, animated: true)
         }
+        requestMoreIfNeeded()
+    }
+
+    private func requestMoreIfNeeded() {
+        guard items.count - currentIndex <= 3, nearEndRequestCount != items.count else { return }
+        nearEndRequestCount = items.count
+        onNearEnd?(self)
     }
 }
 

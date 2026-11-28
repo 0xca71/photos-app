@@ -20,7 +20,7 @@ public struct CloudError: Error, LocalizedError, Sendable, Equatable {
     public var errorDescription: String? { message }
 
     /// The "not connected" error actions throw while no server answers.
-    public static let notConnected = CloudError(kind: .transport, message: "Not connected to the server. Try again when it’s reachable.")
+    public static let notConnected = CloudError(kind: .transport, message: String(localized: "Not connected to the server. Try again when it’s reachable."))
 
     /// Converts any thrown error (transport, decoding, provider-specific, already-readable) into a `CloudError`.
     public static func wrap(_ error: any Error, operation: String) -> CloudError {
@@ -33,13 +33,14 @@ public struct CloudError: Error, LocalizedError, Sendable, Equatable {
 
     /// Readable text for transport and decoding failures.
     public static func describe(_ error: any Error, operation: String, causeDescription: String?) -> CloudError {
+        let action = NSLocalizedString(operation, comment: "Action that failed")
         if let urlError = error as? URLError {
-            return CloudError(kind: .transport, message: "\(operation): \(NetworkErrorDescription.describe(urlError))")
+            return CloudError(kind: .transport, message: String(localized: "\(action): \(NetworkErrorDescription.describe(urlError))"))
         }
         if error is DecodingError {
-            return CloudError(kind: .decoding, message: "\(operation): the server's response could not be read (\(causeDescription ?? String(describing: error))).")
+            return CloudError(kind: .decoding, message: String(localized: "\(action): the server's response could not be read (\(causeDescription ?? String(describing: error)))."))
         }
-        return CloudError(kind: .transport, message: "\(operation): \(causeDescription ?? error.localizedDescription)")
+        return CloudError(kind: .transport, message: String(localized: "\(action): \(causeDescription ?? error.localizedDescription)"))
     }
 
     /// The message to show for any error.
@@ -57,21 +58,21 @@ public enum NetworkErrorDescription {
     public static func describe(_ error: URLError) -> String {
         switch error.code {
         case .appTransportSecurityRequiresSecureConnection:
-            "iOS blocked plain HTTP to this address (App Transport Security)."
+            String(localized: "iOS blocked plain HTTP to this address (App Transport Security).")
         case .timedOut:
-            "the server did not answer in time."
+            String(localized: "the server did not answer in time.")
         case .cannotConnectToHost:
-            "the server refused the connection. Is the Cloud server running?"
+            String(localized: "the server refused the connection. Is the Cloud server running?")
         case .cannotFindHost, .dnsLookupFailed:
-            "the server address could not be found."
+            String(localized: "the server address could not be found.")
         case .notConnectedToInternet:
-            "no network connection (or Local Network access is turned off for Photos in Settings › Privacy)."
+            String(localized: "no network connection (or Local Network access is turned off for Photos in Settings › Privacy).")
         case .networkConnectionLost:
-            "the connection dropped."
+            String(localized: "the connection dropped.")
         case .cancelled:
-            "cancelled."
+            String(localized: "cancelled.")
         default:
-            "network error \(error.code.rawValue) (\(error.localizedDescription))."
+            String(localized: "network error \(String(error.code.rawValue)) (\(error.localizedDescription)).")
         }
     }
 }

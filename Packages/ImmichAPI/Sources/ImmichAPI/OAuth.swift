@@ -66,7 +66,7 @@ public enum ImmichOAuth {
         guard let url = URL(string: response.url), let scheme = url.scheme?.lowercased(), scheme == "https" || scheme == "http" else {
             throw APIError(
                 kind: .decoding,
-                message: "The server's single sign-on page address could not be used. Check the OAuth settings on the server."
+                message: String(localized: "The server's single sign-on page address could not be used. Check the OAuth settings on the server.")
             )
         }
         return Authorization(url: url, state: state, codeVerifier: codeVerifier)
@@ -94,20 +94,20 @@ public enum ImmichOAuth {
         guard let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false),
               let query = components.percentEncodedQuery, !query.isEmpty
         else {
-            throw APIError(kind: .decoding, message: "Single sign-on came back without an answer from the identity provider.")
+            throw APIError(kind: .decoding, message: String(localized: "Single sign-on came back without an answer from the identity provider."))
         }
         let items = components.queryItems ?? []
         func value(_ name: String) -> String? { items.first { $0.name == name }?.value }
 
         if let error = value("error") {
-            let detail = value("error_description").map { ": \($0)" } ?? " (\(error))"
-            throw APIError(kind: .unauthorized, message: "The identity provider refused the sign-in\(detail).")
+            let detail = value("error_description").map { String(localized: ": \($0)") } ?? String(localized: " (\(error))")
+            throw APIError(kind: .unauthorized, message: String(localized: "The identity provider refused the sign-in\(detail)."))
         }
         guard value("state") == expectedState else {
-            throw APIError(kind: .unauthorized, message: "Single sign-on answered for a different sign-in attempt. Try again.")
+            throw APIError(kind: .unauthorized, message: String(localized: "Single sign-on answered for a different sign-in attempt. Try again."))
         }
         guard value("code")?.isEmpty == false else {
-            throw APIError(kind: .decoding, message: "Single sign-on came back without a sign-in code.")
+            throw APIError(kind: .decoding, message: String(localized: "Single sign-on came back without a sign-in code."))
         }
         return "\(redirectURI)?\(query)"
     }
@@ -161,7 +161,7 @@ public enum ImmichOAuth {
         }
         let (data, response) = result
         guard let http = response as? HTTPURLResponse else {
-            throw APIError(kind: .transport, message: "Single sign-on: the server's answer could not be read.")
+            throw APIError(kind: .transport, message: String(localized: "Single sign-on: the server's answer could not be read."))
         }
         guard (200..<300).contains(http.statusCode) else {
             throw APIError.from(statusCode: http.statusCode, body: data, operation: operation)

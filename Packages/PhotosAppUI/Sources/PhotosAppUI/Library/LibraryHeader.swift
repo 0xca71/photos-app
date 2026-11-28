@@ -69,7 +69,7 @@ struct LibraryHeader: View {
             .accessibilityHint("Shows why syncing is paused")
             .transition(.opacity)
         case .count(let count):
-            Text(count == 1 ? "1 Item" : "\(count.formatted()) Items")
+            Text(count == 1 ? String(localized: "1 Item") : String(localized: "\(count.formatted()) Items"))
                 .font(.headline)
                 .foregroundStyle(.white)
                 .transition(.opacity)
