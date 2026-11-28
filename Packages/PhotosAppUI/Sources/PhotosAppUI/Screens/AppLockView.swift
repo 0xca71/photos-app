@@ -4,6 +4,11 @@ import UIKit
 
 struct AppLockUnlockView: View {
     let appLock: AppLockStore
+    private let digitRows = [
+        ["1", "2", "3"],
+        ["4", "5", "6"],
+        ["7", "8", "9"],
+    ]
     @State private var password = ""
     @State private var showsError = false
 
@@ -52,7 +57,7 @@ struct AppLockUnlockView: View {
 
     private var keypad: some View {
         VStack(spacing: 14) {
-            ForEach([ ["1", "2", "3"], ["4", "5", "6"], ["7", "8", "9"] ], id: \.self) { row in
+            ForEach(digitRows, id: \.self) { row in
                 HStack(spacing: 18) {
                     ForEach(row, id: \.self, content: digitButton)
                 }
