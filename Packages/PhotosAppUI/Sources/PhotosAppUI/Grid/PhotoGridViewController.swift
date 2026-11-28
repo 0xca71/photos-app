@@ -347,7 +347,7 @@ final class PhotoGridViewController: UIViewController {
         return collectionView.contentOffset.y >= maxOffset - max(gridLayout.itemSide, 44)
     }
 
-    private func scrollToBottom() {
+    func scrollToBottom() {
         let insets = collectionView.adjustedContentInset
         let maxOffset = max(-insets.top, collectionView.contentSize.height - collectionView.bounds.height + insets.bottom)
         collectionView.setContentOffset(CGPoint(x: 0, y: maxOffset), animated: false)
