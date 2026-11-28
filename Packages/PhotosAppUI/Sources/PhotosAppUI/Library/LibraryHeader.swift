@@ -9,6 +9,8 @@ struct LibraryHeader: View {
     let itemCount: Int
     /// The server can't be reached (shown like iCloud's "Syncing Paused").
     let syncPaused: Bool
+    let randomJump: () -> Void
+    let canRandomJump: Bool
     let selectionMenu: () -> AnyView
     @State private var showsPausedAlert = false
 
@@ -123,6 +125,14 @@ struct LibraryHeader: View {
 
     private var filterMenu: some View {
         Menu {
+            if !ui.isSelecting {
+                Section {
+                    Button(action: randomJump) {
+                        Label("Random Jump", systemImage: "shuffle")
+                    }
+                    .disabled(!canRandomJump)
+                }
+            }
             LibraryFilterMenuContent(ui: ui)
         } label: {
             Image(systemName: ui.isFiltered ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease")
@@ -154,20 +164,20 @@ struct LibraryFilterMenuContent: View {
 
         Section("Filter:") {
             Picker("Filter", selection: $ui.filter) {
-                Label("All Items", systemImage: "square.grid.3x3").tag(LibraryFilter.all)
-                Label("Favourites", systemImage: "heart").tag(LibraryFilter.favourites)
-                Label("Edited", systemImage: "slider.horizontal.3").tag(LibraryFilter.edited)
-                Label("Shared with You", systemImage: "shared.with.you").tag(LibraryFilter.sharedWithYou)
-                Label("Captured by Me", systemImage: "person.fill.viewfinder").tag(LibraryFilter.capturedByMe)
-                Label("Not in an Album", systemImage: "rectangle.stack.slash").tag(LibraryFilter.notInAlbum)
+                Label("All Items", systemImage: "square.grid.3x3").tag(CloudTimelineFilter.all)
+                Label("Favourites", systemImage: "heart").tag(CloudTimelineFilter.favourites)
+                Label("Edited", systemImage: "slider.horizontal.3").tag(CloudTimelineFilter.edited)
+                Label("Shared with You", systemImage: "shared.with.you").tag(CloudTimelineFilter.sharedWithYou)
+                Label("Captured by Me", systemImage: "person.fill.viewfinder").tag(CloudTimelineFilter.capturedByMe)
+                Label("Not in an Album", systemImage: "rectangle.stack.slash").tag(CloudTimelineFilter.notInAlbum)
             }
             .pickerStyle(.inline)
 
             Menu {
                 Picker("Media Types", selection: $ui.filter) {
-                    Label("Photos", systemImage: "photo").tag(LibraryFilter.photos)
-                    Label("Videos", systemImage: "video").tag(LibraryFilter.videos)
-                    Label("Screenshots", systemImage: "camera.viewfinder").tag(LibraryFilter.screenshots)
+                    Label("Photos", systemImage: "photo").tag(CloudTimelineFilter.photos)
+                    Label("Videos", systemImage: "video").tag(CloudTimelineFilter.videos)
+                    Label("Screenshots", systemImage: "camera.viewfinder").tag(CloudTimelineFilter.screenshots)
                 }
                 .pickerStyle(.inline)
             } label: {

@@ -59,6 +59,7 @@ Photos and personal details are blurred.
 - One timeline of iPhone and Cloud photos, de-duplicated by SHA-1, with small badges showing where each lives (phone, Cloud, or both).
 - Grid: pinch between 1, 3, 5, 15 and 30 columns; Years / Months / All; scrubber; drag-to-select with auto-scroll.
 - Filter menu: Added or Captured, Favourites, Edited, Shared with You, Captured by Me, Not in an Album, media types, aspect-ratio grid.
+- **Random Jump** in the Library filter menu highlights a random Gallery asset in the grid, without opening it or changing the filter or sort. With Photos access off, the grid browses the signed-in server directly. For filters the server can count, a jump needs only the bucket counts and the destination month's metadata; filters such as Edited or Screenshots can take longer because they need asset metadata.
 - Instant, offline launch from the phone's database; changes sync in the background.
 
 **Viewer**
@@ -187,7 +188,7 @@ A free developer account (Personal Team) works. Free profiles last 7 days, so ru
 
 **First launch**
 1. Sign in with your server account, or with **Sign In with Single Sign-On** when the server uses OAuth. Enter the server with `https://` if it is reached by a public name.
-2. Allow **Full** Photos access, so the iPhone's photos join the Library.
+2. To browse Gallery alone, leave iPhone Photos access off and backup disabled. To include iPhone photos, opt in using **Show Photos on This iPhone** in Settings.
 
 **Back up**
 1. Open your account picture (Collections, top right) › **Back Up This iPhone** and turn it on. Optional: choose albums (**Back Up From**), mobile data, charging only.
