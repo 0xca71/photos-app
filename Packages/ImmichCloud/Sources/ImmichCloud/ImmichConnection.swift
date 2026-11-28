@@ -8,7 +8,7 @@ import Sync
 /// One signed-in Immich account on one server address.
 struct ImmichConnection: CloudConnection {
     let server: ActiveServer
-    private let token: String
+    let token: String
     private let client: Client
 
     init(server: ActiveServer, token: String, session: URLSession) {

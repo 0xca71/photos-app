@@ -29,6 +29,9 @@ final class PhotoGridViewController: UIViewController {
     var contentInsets = UIEdgeInsets.zero {
         didSet { if contentInsets != oldValue { applyInsets() } }
     }
+    /// Keeps the visible tile anchored when a server-backed grid appends a batch.
+    /// Regular collections retain the historical behavior of staying at the newest end.
+    var preservesPositionWhenAppending = false
     /// View Options › Aspect Ratio Grid: whole photos in their tiles instead of square crops.
     var aspectRatioGrid = false {
         didSet { if aspectRatioGrid != oldValue { reconfigureVisibleCells() } }
@@ -321,7 +324,7 @@ final class PhotoGridViewController: UIViewController {
         collectionView.layoutIfNeeded()
         if !didInitialScroll, onScrollInfo != nil { LaunchTiming.mark("laidOut") }
 
-        if !didInitialScroll || wasAtBottom {
+        if !didInitialScroll || (wasAtBottom && !preservesPositionWhenAppending) {
             if !items.isEmpty, collectionView.bounds.height > 0 {
                 didInitialScroll = true
                 scrollToBottom()
