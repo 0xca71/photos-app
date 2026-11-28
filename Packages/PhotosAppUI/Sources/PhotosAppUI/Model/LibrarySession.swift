@@ -306,6 +306,19 @@ public final class LibrarySession {
         return try? await database.reader.read { db in try AssetDetails.fetch(id: assetID, in: db) }
     }
 
+    /// Resolves a Gallery detailed address for one server asset and stores the result in the local
+    /// EXIF cache. This is deliberately per-asset and on demand, never part of timeline loading.
+    public func ensureAssetAddress(for assetID: String) async throws -> String? {
+        guard !assetID.hasPrefix("local:") else { return nil }
+        guard let address = try await connected().ensureAssetAddress(assetID: assetID), !address.isEmpty else {
+            return nil
+        }
+        try await database.writer.write { db in
+            try RemoteStore.setFormattedAddress(address, id: assetID, in: db)
+        }
+        return address
+    }
+
     public func albums(containing assetID: String) async throws -> [CloudAlbum] {
         try await connected().albums(containing: assetID)
     }

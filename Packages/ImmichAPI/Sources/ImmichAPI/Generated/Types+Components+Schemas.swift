@@ -197,6 +197,23 @@ extension Components {
             case owner = "owner"
             case viewer = "viewer"
         }
+        /// - Remark: Generated from `#/components/schemas/AssetAddressResponseDto`.
+        public struct AssetAddressResponseDto: Codable, Hashable, Sendable {
+            /// Detailed address, or null when unavailable
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetAddressResponseDto/formattedAddress`.
+            public var formattedAddress: Swift.String?
+            /// Creates a new `AssetAddressResponseDto`.
+            ///
+            /// - Parameters:
+            ///   - formattedAddress: Detailed address, or null when unavailable
+            public init(formattedAddress: Swift.String? = nil) {
+                self.formattedAddress = formattedAddress
+            }
+            public enum CodingKeys: String, CodingKey {
+                case formattedAddress
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/AssetBulkDeleteDto`.
         public struct AssetBulkDeleteDto: Codable, Hashable, Sendable {
             /// Force delete even if in use
@@ -1482,6 +1499,10 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/ExifResponseDto/focalLength`.
             public var focalLength: Swift.Double?
+            /// Detailed display address
+            ///
+            /// - Remark: Generated from `#/components/schemas/ExifResponseDto/formattedAddress`.
+            public var formattedAddress: Swift.String?
             /// ISO sensitivity
             ///
             /// - Remark: Generated from `#/components/schemas/ExifResponseDto/iso`.
@@ -1543,6 +1564,7 @@ extension Components {
             ///   - fNumber: F-number (aperture)
             ///   - fileSizeInByte: File size in bytes
             ///   - focalLength: Focal length in mm
+            ///   - formattedAddress: Detailed display address
             ///   - iso: ISO sensitivity
             ///   - latitude: GPS latitude
             ///   - lensModel: Lens model
@@ -1566,6 +1588,7 @@ extension Components {
                 fNumber: Swift.Double? = nil,
                 fileSizeInByte: Swift.Int? = nil,
                 focalLength: Swift.Double? = nil,
+                formattedAddress: Swift.String? = nil,
                 iso: Swift.Int? = nil,
                 latitude: Swift.Double? = nil,
                 lensModel: Swift.String? = nil,
@@ -1589,6 +1612,7 @@ extension Components {
                 self.fNumber = fNumber
                 self.fileSizeInByte = fileSizeInByte
                 self.focalLength = focalLength
+                self.formattedAddress = formattedAddress
                 self.iso = iso
                 self.latitude = latitude
                 self.lensModel = lensModel
@@ -1613,6 +1637,7 @@ extension Components {
                 case fNumber
                 case fileSizeInByte
                 case focalLength
+                case formattedAddress
                 case iso
                 case latitude
                 case lensModel
@@ -5330,6 +5355,10 @@ extension Components {
             ///
             /// - Remark: Generated from `#/components/schemas/SyncAssetExifV1/focalLength`.
             public var focalLength: Swift.Double?
+            /// Detailed display address
+            ///
+            /// - Remark: Generated from `#/components/schemas/SyncAssetExifV1/formattedAddress`.
+            public var formattedAddress: Swift.String?
             /// FPS
             ///
             /// - Remark: Generated from `#/components/schemas/SyncAssetExifV1/fps`.
@@ -5400,6 +5429,7 @@ extension Components {
             ///   - fNumber: F number
             ///   - fileSizeInByte: File size in byte
             ///   - focalLength: Focal length
+            ///   - formattedAddress: Detailed display address
             ///   - fps: FPS
             ///   - iso: ISO
             ///   - latitude: Latitude
@@ -5426,6 +5456,7 @@ extension Components {
                 fNumber: Swift.Double? = nil,
                 fileSizeInByte: Swift.Int? = nil,
                 focalLength: Swift.Double? = nil,
+                formattedAddress: Swift.String? = nil,
                 fps: Swift.Double? = nil,
                 iso: Swift.Int? = nil,
                 latitude: Swift.Double? = nil,
@@ -5452,6 +5483,7 @@ extension Components {
                 self.fNumber = fNumber
                 self.fileSizeInByte = fileSizeInByte
                 self.focalLength = focalLength
+                self.formattedAddress = formattedAddress
                 self.fps = fps
                 self.iso = iso
                 self.latitude = latitude
@@ -5479,6 +5511,7 @@ extension Components {
                 case fNumber
                 case fileSizeInByte
                 case focalLength
+                case formattedAddress
                 case fps
                 case iso
                 case latitude

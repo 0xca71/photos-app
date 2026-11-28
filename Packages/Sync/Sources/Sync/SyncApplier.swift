@@ -150,6 +150,7 @@ enum SyncApplier {
         record.city = exif.city
         record.state = exif.state
         record.country = exif.country
+        record.formattedAddress = exif.formattedAddress
         record.description = exif.description
         record.profileDescription = exif.profileDescription
         record.projectionType = exif.projectionType
