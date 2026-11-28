@@ -75,6 +75,7 @@ final class LibraryUIState {
     var timeScaleAnchor: String?
     var zoomCommand: ZoomCommand?
     var scrollTarget: Date?
+    var scrollToBottomRequested = false
 
     enum ZoomCommand: Equatable { case zoomIn, zoomOut }
 
