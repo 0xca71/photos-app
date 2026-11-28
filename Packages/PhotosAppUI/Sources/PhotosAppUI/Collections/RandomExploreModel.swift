@@ -161,7 +161,7 @@ final class RandomExploreModel {
         batchRequestID = requestID
         let round = generation
         isLoading = true
-        let task = Task { [weak self] in
+        let task = Task<[TimelineItem], Never> { [weak self] in
             guard let self else { return [] }
             return await self.fetchBatch(round: round)
         }
