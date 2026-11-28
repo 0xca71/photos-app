@@ -83,6 +83,13 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /assets/{id}`.
     /// - Remark: Generated from `#/paths//assets/{id}/get(getAssetInfo)`.
     func getAssetInfo(_ input: Operations.GetAssetInfo.Input) async throws -> Operations.GetAssetInfo.Output
+    /// Ensure asset detailed address
+    ///
+    /// Resolve and store a missing detailed address without changing GPS or location filters.
+    ///
+    /// - Remark: HTTP `POST /assets/{id}/address`.
+    /// - Remark: Generated from `#/paths//assets/{id}/address/post(ensureAssetAddress)`.
+    func ensureAssetAddress(_ input: Operations.EnsureAssetAddress.Input) async throws -> Operations.EnsureAssetAddress.Output
     /// Download original asset
     ///
     /// Downloads the original file of the specified asset.
@@ -502,6 +509,21 @@ extension APIProtocol {
         try await getAssetInfo(Operations.GetAssetInfo.Input(
             path: path,
             query: query,
+            headers: headers
+        ))
+    }
+    /// Ensure asset detailed address
+    ///
+    /// Resolve and store a missing detailed address without changing GPS or location filters.
+    ///
+    /// - Remark: HTTP `POST /assets/{id}/address`.
+    /// - Remark: Generated from `#/paths//assets/{id}/address/post(ensureAssetAddress)`.
+    public func ensureAssetAddress(
+        path: Operations.EnsureAssetAddress.Input.Path,
+        headers: Operations.EnsureAssetAddress.Input.Headers = .init()
+    ) async throws -> Operations.EnsureAssetAddress.Output {
+        try await ensureAssetAddress(Operations.EnsureAssetAddress.Input(
+            path: path,
             headers: headers
         ))
     }

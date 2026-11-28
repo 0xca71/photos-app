@@ -78,6 +78,7 @@ struct ImmichConnection: CloudConnection {
         try await client.setLocation(latitude: latitude, longitude: longitude, assetIDs: assetIDs)
     }
     func setDescription(_ text: String, assetID: String) async throws { try await client.setDescription(text, assetID: assetID) }
+    func ensureAssetAddress(assetID: String) async throws -> String? { try await client.ensureAssetAddress(assetID: assetID) }
     func stack(assetIDs: [String]) async throws { try await client.stack(assetIDs: assetIDs) }
 
     // MARK: Albums, memories, search, sharing

@@ -72,6 +72,12 @@ public enum RemoteStore {
         for exif in exifs { try exif.upsert(db) }
     }
 
+    public static func setFormattedAddress(_ address: String, id: String, in db: Database) throws {
+        guard var exif = try RemoteExifRecord.fetchOne(db, key: id) else { return }
+        exif.formattedAddress = address
+        try exif.update(db)
+    }
+
     public static func upsert(_ cloudIds: [RemoteAssetCloudIdRecord], in db: Database) throws {
         for cloudId in cloudIds { try cloudId.upsert(db) }
     }

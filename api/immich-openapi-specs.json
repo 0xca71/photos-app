@@ -18206,6 +18206,63 @@
         ],
         "x-immich-permission": "workflow.read"
       }
+    },
+    "/assets/{id}/address": {
+      "post": {
+        "description": "Resolve and store a missing detailed address without changing GPS or location filters.",
+        "operationId": "ensureAssetAddress",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetAddressResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Ensure asset detailed address",
+        "tags": [
+          "Assets"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v1",
+            "state": "Added"
+          },
+          {
+            "version": "v1",
+            "state": "Beta"
+          }
+        ],
+        "x-immich-permission": "asset.read",
+        "x-immich-state": "Beta"
+      }
     }
   },
   "info": {
@@ -22556,6 +22613,12 @@
           "timeZone": {
             "default": null,
             "description": "Time zone",
+            "nullable": true,
+            "type": "string"
+          },
+          "formattedAddress": {
+            "default": null,
+            "description": "Detailed display address",
             "nullable": true,
             "type": "string"
           }
@@ -30551,6 +30614,11 @@
             "description": "Time zone",
             "nullable": true,
             "type": "string"
+          },
+          "formattedAddress": {
+            "description": "Detailed display address",
+            "nullable": true,
+            "type": "string"
           }
         },
         "required": [
@@ -34038,6 +34106,19 @@
             "description": "Workflow trigger type"
           }
         },
+        "type": "object"
+      },
+      "AssetAddressResponseDto": {
+        "properties": {
+          "formattedAddress": {
+            "description": "Detailed address, or null when unavailable",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "formattedAddress"
+        ],
         "type": "object"
       }
     }

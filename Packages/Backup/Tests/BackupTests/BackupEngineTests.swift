@@ -96,6 +96,7 @@ private final class FakeConnection: CloudConnection, @unchecked Sendable {
     func setDateTimeOriginal(_ iso8601: String, assetIDs: [String]) async throws { throw unused() }
     func setLocation(latitude: Double, longitude: Double, assetIDs: [String]) async throws { throw unused() }
     func setDescription(_ text: String, assetID: String) async throws { throw unused() }
+    func ensureAssetAddress(assetID: String) async throws -> String? { throw unused() }
     func albums(shared: Bool) async throws -> [CloudAlbum] { throw unused() }
     func albums(containing assetID: String) async throws -> [CloudAlbum] { throw unused() }
     func createAlbum(name: String, assetIDs: [String], sharedWith userIDs: [String]) async throws -> CloudAlbum { throw unused() }

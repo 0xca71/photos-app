@@ -7,6 +7,20 @@ public typealias AlbumSummary = CloudAlbum
 /// deprecated bulk `PUT /assets` (docs/DESIGN.md D4: the replacement PATCH isn't in the
 /// spec); it's wrapped here so switching later is a one-line change.
 extension Client {
+    /// Resolves and stores a missing detailed address without changing the asset's GPS.
+    public func ensureAssetAddress(assetID: String) async throws -> String? {
+        do {
+            switch try await ensureAssetAddress(path: .init(id: assetID)) {
+            case .ok(let response):
+                return try response.body.json.formattedAddress
+            case .undocumented(let status, let payload):
+                throw await APIError.from(statusCode: status, payload: payload, operation: "resolve the address")
+            }
+        } catch {
+            throw APIError.wrap(error, operation: "Resolve address")
+        }
+    }
+
     public func setFavorite(_ isFavorite: Bool, assetIDs: [String]) async throws {
         try await bulkUpdate(.init(ids: assetIDs, isFavorite: isFavorite), operation: isFavorite ? "add to Favourites" : "remove from Favourites")
     }
