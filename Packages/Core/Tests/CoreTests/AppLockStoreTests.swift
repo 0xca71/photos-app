@@ -27,11 +27,13 @@ import Testing
         try store.setUp(password: "1234", timeout: .fiveMinutes)
         #expect(store.isEnabled)
         #expect(!store.isLocked)
+        #expect(store.passwordLength == 6)
         #expect(store.timeout == .fiveMinutes)
 
         let reloaded = AppLockStore(defaults: defaults, secrets: secrets)
         #expect(reloaded.isEnabled)
         #expect(reloaded.isLocked)
+        #expect(reloaded.passwordLength == 6)
         #expect(reloaded.timeout == .fiveMinutes)
     }
 
@@ -43,6 +45,7 @@ import Testing
         store.sceneBecameActive(at: start.addingTimeInterval(30))
         #expect(!store.isLocked)
         store.sceneBecameInactive(at: start.addingTimeInterval(40))
+        store.sceneEnteredBackground(at: start.addingTimeInterval(40))
         store.sceneBecameActive(at: start.addingTimeInterval(101))
         #expect(store.isLocked)
         #expect(!store.unlock(password: "000000"))
@@ -50,10 +53,33 @@ import Testing
         #expect(!store.isLocked)
     }
 
-    @Test func immediateTimeoutLocksBeforeAppSwitcherSnapshot() throws {
+    @Test func appSwitcherDoesNotLockImmediately() throws {
         let store = AppLockStore(defaults: makeDefaults(), secrets: InMemorySecretStore())
         try store.setUp(password: "1234", timeout: .immediately)
-        store.sceneBecameInactive()
+        let start = Date(timeIntervalSince1970: 10_000)
+        store.sceneBecameInactive(at: start)
+        #expect(!store.isLocked)
+        store.sceneBecameActive(at: start.addingTimeInterval(1))
+        #expect(!store.isLocked)
+    }
+
+    @Test func immediateTimeoutLocksAfterEnteringBackground() throws {
+        let store = AppLockStore(defaults: makeDefaults(), secrets: InMemorySecretStore())
+        try store.setUp(password: "1234", timeout: .immediately)
+        let start = Date(timeIntervalSince1970: 10_000)
+        store.sceneBecameInactive(at: start)
+        store.sceneEnteredBackground(at: start.addingTimeInterval(1))
         #expect(store.isLocked)
+    }
+
+    @Test func infersPasswordLengthForExistingInstall() throws {
+        let defaults = makeDefaults()
+        let secrets = InMemorySecretStore()
+        let store = AppLockStore(defaults: defaults, secrets: secrets)
+        try store.setUp(password: "1234", timeout: .immediately)
+        defaults.removeObject(forKey: "app-lock.password-length")
+
+        let reloaded = AppLockStore(defaults: defaults, secrets: secrets)
+        #expect(reloaded.passwordLength == 4)
     }
 }

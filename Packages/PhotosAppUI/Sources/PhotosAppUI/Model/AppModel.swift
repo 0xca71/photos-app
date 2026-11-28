@@ -236,7 +236,7 @@ public final class AppModel {
     }
 
     public func sceneEnteredBackground() {
-        appLock.sceneBecameInactive()
+        appLock.sceneEnteredBackground()
         session?.setActive(false)
         scheduleBackgroundTasks()
     }
